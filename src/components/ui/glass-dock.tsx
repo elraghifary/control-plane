@@ -17,6 +17,7 @@ export interface DockItem {
 export interface GlassDockProps extends React.HTMLAttributes<HTMLDivElement> {
     items: DockItem[];
     dockClassName?: string;
+    activeIndex?: number;
 }
 
 // Attempt to register MorphSVGPlugin if available. 
@@ -344,6 +345,7 @@ export const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
             items,
             className,
             dockClassName,
+            activeIndex,
             ...props
         },
         ref
@@ -442,7 +444,7 @@ export const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                     {items.map((el, index) => {
                         const Icon = el.icon;
                         const isHovered = hoveredIndex === index;
-                        const isActive = isHovered; // Simplified for this demo
+                        const isActive = activeIndex === index;
 
                         const handleClick = () => {
                             if (el.onClick) {
@@ -461,7 +463,10 @@ export const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                 key={el.title}
                                 onMouseEnter={() => handleMouseEnter(index)}
                                 onClick={handleClick}
-                                className="relative w-10 h-10 flex items-center justify-center cursor-pointer"
+                                className={cn(
+                                    "relative w-10 h-10 flex items-center justify-center cursor-pointer rounded-xl transition-colors",
+                                    isActive && "bg-instrument/15 ring-1 ring-instrument/50"
+                                )}
                                 role="button"
                                 tabIndex={0}
                                 onKeyDown={(e) => {
@@ -492,9 +497,11 @@ export const GlassDock = React.forwardRef<HTMLDivElement, GlassDockProps>(
                                         <Icon
                                             className={cn(
                                                 'h-[22px] w-[22px] transition-colors duration-200',
-                                                isHovered
-                                                    ? 'text-neutral-900 dark:text-white'
-                                                    : 'text-neutral-500 dark:text-neutral-400'
+                                                isActive
+                                                    ? 'text-instrument'
+                                                    : isHovered
+                                                        ? 'text-neutral-900 dark:text-white'
+                                                        : 'text-neutral-500 dark:text-neutral-400'
                                             )}
                                         />
                                     )}
