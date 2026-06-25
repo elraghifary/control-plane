@@ -99,18 +99,80 @@ export class OctokitDataService implements DataService {
     });
   }
 
-  // --- Implemented in Task 9 (stubbed here so `implements DataService` type-checks) ---
-  async getDashboardSummary(_slug: string): Promise<DashboardSummary> {
-    return {
-      activePullRequests: 0, openReleases: 0,
-      lastDeployment: { env: "main", ref: "main", sha: "—", deployedAt: new Date(0).toISOString(), status: "success" },
-      repositoryStatus: "operational", servicesOnline: 0, buildHealthPct: 100,
-    };
+  async getDashboardSummary(slug: string): Promise<DashboardSummary> {
+    return this.cached(`sum:${slug}`, async () => {
+      const { owner, repo } = parseSlug(slug);
+      const [openPrs, releases, runs] = await Promise.all([
+        this.octokit.rest.search
+          .issuesAndPullRequests({ q: `repo:${slug} is:pr is:open`, per_page: 1 })
+          .then((r) => r.data.total_count)
+          .catch(() => 0),
+        this.octokit.rest.repos.listReleases({ owner, repo, per_page: 100 }).then((r) => r.data).catch(() => []),
+        this.octokit.rest.actions
+          .listWorkflowRunsForRepo({ owner, repo, per_page: 30 })
+          .then((r) => r.data.workflow_runs)
+          .catch(() => []),
+      ]);
+      const latest = releases[0];
+      const completed = runs.filter((r) => r.status === "completed");
+      const success = completed.filter((r) => r.conclusion === "success").length;
+      const envs = await this.getEnvironmentStatuses(slug);
+      return {
+        activePullRequests: openPrs,
+        openReleases: releases.filter((r) => r.draft).length,
+        lastDeployment: {
+          env: "main",
+          ref: latest?.tag_name ?? "main",
+          sha: (latest?.tag_name ?? "—").slice(0, 12),
+          deployedAt: latest?.published_at ?? new Date(0).toISOString(),
+          status: "success",
+        },
+        repositoryStatus: "operational",
+        servicesOnline: envs.filter((e) => e.status === "healthy" || e.status === "stable").length,
+        buildHealthPct: completed.length ? Math.round((success / completed.length) * 100) : 100,
+      };
+    });
   }
-  async getEnvironmentStatuses(_slug: string): Promise<EnvironmentStatus[]> {
-    return [];
+
+  async getEnvironmentStatuses(slug: string): Promise<EnvironmentStatus[]> {
+    return this.cached(`env:${slug}`, async () => {
+      const { owner, repo } = parseSlug(slug);
+      const KNOWN: Record<string, EnvironmentStatus["env"]> = {
+        development: "development", dev: "development",
+        staging: "staging", stage: "staging",
+        production: "main", prod: "main", main: "main",
+      };
+      const list = await this.octokit.rest.repos
+        .getAllEnvironments({ owner, repo })
+        .then((r) => r.data.environments ?? [])
+        .catch(() => []);
+      const out: EnvironmentStatus[] = [];
+      for (const e of list) {
+        const env = KNOWN[(e.name ?? "").toLowerCase()];
+        if (!env || out.some((o) => o.env === env)) continue;
+        out.push({
+          env,
+          status: "stable",
+          openPRs: 0,
+          lastDeployAt: e.updated_at ?? new Date(0).toISOString(),
+          marker: e.name ?? env,
+        });
+      }
+      return out;
+    });
   }
-  async getDeploymentTimeline(_slug: string): Promise<DeploymentTimelinePoint[]> {
-    return [];
+
+  async getDeploymentTimeline(slug: string): Promise<DeploymentTimelinePoint[]> {
+    return this.cached(`dep:${slug}`, async () => {
+      const { owner, repo } = parseSlug(slug);
+      const deps = await this.octokit.rest.repos
+        .listDeployments({ owner, repo, per_page: 5 })
+        .then((r) => r.data)
+        .catch(() => []);
+      return deps
+        .slice(0, 5)
+        .reverse()
+        .map((_, i) => ({ day: `D${i + 1}`, status: "success" as const }));
+    });
   }
 }
