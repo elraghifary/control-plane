@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { store } from "@/lib/store";
@@ -13,10 +14,12 @@ function orgs(): string[] {
     .filter(Boolean);
 }
 
-export async function getDataService(): Promise<DataService> {
+// React.cache memoizes per request render, so the layout and page share one
+// service instance (and its in-memory cache) instead of building two.
+export const getDataService = cache(async (): Promise<DataService> => {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const user = await store.getUserById(session.user.id);
   if (!user) redirect("/login");
   return new OctokitDataService(decryptPat(user.patEncrypted), orgs());
-}
+});

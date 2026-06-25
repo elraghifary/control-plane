@@ -13,7 +13,7 @@ function parseSlug(slug: string): { owner: string; repo: string } {
 export class OctokitDataService implements DataService {
   private octokit: Octokit;
   private orgs: string[];
-  private cache = new Map<string, { at: number; value: unknown }>();
+  private cache = new Map<string, { at: number; value: Promise<unknown> }>();
   private ttl = 60_000;
 
   constructor(pat: string, orgs: string[] = []) {
@@ -21,11 +21,14 @@ export class OctokitDataService implements DataService {
     this.orgs = orgs;
   }
 
-  private async cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  // Cache the in-flight promise so concurrent callers coalesce into one request;
+  // evict on rejection so a failed call isn't cached.
+  private cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const hit = this.cache.get(key);
-    if (hit && Date.now() - hit.at < this.ttl) return hit.value as T;
-    const value = await fn();
+    if (hit && Date.now() - hit.at < this.ttl) return hit.value as Promise<T>;
+    const value = fn();
     this.cache.set(key, { at: Date.now(), value });
+    value.catch(() => this.cache.delete(key));
     return value;
   }
 
