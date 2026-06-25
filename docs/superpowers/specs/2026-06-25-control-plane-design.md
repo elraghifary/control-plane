@@ -25,6 +25,9 @@ spec → plan → implementation cycle.
 - **Charts:** Recharts (via the shadcn `chart` component), using the `--chart-*`
   tokens. Compatibility with React 19 / Next 16 must be verified first; documented
   fallback is lightweight custom SVG charts if Recharts misbehaves.
+- **Navigation:** VengeanceUI `glass-dock` (floating, bottom-center) for primary
+  nav — Dashboard · Pull Requests · Releases · Settings — plus a slim floating top
+  strip (brand, repository selector, actions). No left sidebar.
 - **Data in Phase 1:** mock fixtures behind a typed service interface. No real
   GitHub, no auth yet.
 
@@ -43,7 +46,7 @@ spec → plan → implementation cycle.
 ## 4. Phase 1 scope
 
 **In scope**
-- App shell: collapsible sidebar nav + top bar with repository selector.
+- App shell: floating glass-dock nav + slim floating top strip with repository selector.
 - Theming: dark default + light toggle; cyan accent + status color tokens.
 - Aviation design-system primitives (radar, runway, HUD, grid) + motion primitives.
 - Reusable states: skeleton shimmer, aviation empty states, toast provider (Sonner).
@@ -62,9 +65,13 @@ The shell assumes a hard-coded mock signed-in operator.
 ## 5. Architecture
 
 ### 5.1 Routing & shell (App Router)
-- Route group `(app)` whose `layout.tsx` renders the shell (sidebar + top bar) once.
-- Pages: `(app)/dashboard`, `(app)/pull-requests/development`, `.../staging`,
-  `.../release`, `(app)/settings`. `/` redirects to `/dashboard`.
+- Route group `(app)` whose `layout.tsx` renders the shell — `GlassDockNav`
+  (floating, bottom-center) + `TopStrip` — once around all pages.
+- Pages: `(app)/dashboard`; `(app)/pull-requests` with a nested `layout.tsx` that
+  renders a segmented tab strip over child routes `.../development` and `.../staging`
+  (default `/pull-requests` → `/pull-requests/development`); `(app)/releases`;
+  `(app)/settings`. `/` redirects to `/dashboard`.
+- Dock active state via a small `activeIndex` prop added to `glass-dock.tsx`.
 - `(app)/template.tsx` wraps page content in a Framer Motion transition (templates
   re-mount on navigation; layouts do not).
 - Mock data is read in Server Components where practical; interactive pieces
@@ -78,6 +85,9 @@ The shell assumes a hard-coded mock signed-in operator.
 - `src/app/providers.tsx`: `next-themes` ThemeProvider (`attribute="class"`,
   `defaultTheme="dark"`) + Sonner `<Toaster/>`. Uses the already-stubbed
   `ThemeToggle`.
+- Shell pieces: `GlassDockNav` (wraps VengeanceUI `glass-dock`, extended with an
+  `activeIndex` prop) + `TopStrip` (brand, `RepoSelector`, search / notifications /
+  theme toggle / user). Content is full-bleed with bottom padding for the dock.
 - Accent + status colors added to `globals.css` as **new** variables for both
   `:root` (light) and `.dark`, leaving existing neutral tokens untouched:
   - `--instrument` (cyan; dark ≈ `#38bdf8`), `--instrument-2` (indigo ≈ `#6366f1`),
@@ -162,27 +172,29 @@ Mock repositories: `dashboard, api, payment, notification, users, inventory`.
 
 ## 7. Components to build
 
-Shell: `Sidebar`, `Topbar`, `RepoSelector`, mock `UserChip`.
+Shell: `GlassDockNav` (wraps `glass-dock` + `activeIndex` extension), `TopStrip`, `RepoSelector`, `PullRequestsTabs`, mock `UserChip`.
 Dashboard: `MetricCard`, `StatusWidget`, the 3 chart wrappers, `DashboardGrid`.
 Motifs: `RadarRings`, `RunwayStripes`, `HudCorners`, `GridField`.
 Motion: `PageTransition`, `FadeInUp`, `Stagger`, `AnimatedCounter`.
 States: `EmptyState`, `Skeleton`, `Toaster`.
 Pages: `dashboard/page.tsx` (real), 4 placeholder pages, root redirect, `providers.tsx`.
-Reused VengeanceUI: `animated-number` (counters), `glow-border-card` (cards);
+Reused VengeanceUI: `glass-dock` (dock nav), `animated-number` (counters), `glow-border-card` (cards);
 `aurora-hero`/`light-lines`/`liquid-gradient` reserved for the Phase 2 login hero.
 
 ## 8. Visual design reference (approved mockup)
 
 Dark cockpit base (`~#0a0b0d`) with a faint navigation grid and corner radar rings;
 cyan instrument glow; glass cards (subtle white-alpha gradient + 1px border, hover
-lift); monospace HUD readouts (SHAs, percentages, tags). Layout: ~172px left sidebar
-(brand radar logo + "Control Plane / OPS TOWER"; Dashboard active; Pull Requests
-group → Development/Staging/Release; Settings; operator chip with pulsing "on
-station" dot). Top bar: page title "Mission Control", repository selector pill,
-search/notifications/theme-toggle. Content: 5 metric cards (Active PRs, Open
-Releases, Last Deploy, Repo Status, Build Health), Merge Activity + Release Frequency
-+ Deployment Timeline charts, and Development/Staging/Main status widgets with radar
-sweeps and runway-stripe accents.
+lift); monospace HUD readouts (SHAs, percentages, tags). No sidebar — the layout is
+full-bleed with two floating glass elements: (1) a slim top strip holding the brand
+radar logo + "Control Plane / OPS TOWER", the repository selector pill, and
+search / notifications / theme-toggle / operator avatar; (2) a bottom-centered
+glass dock (VengeanceUI `glass-dock`) with four icons — Dashboard (active: cyan with
+an under-dot), Pull Requests, Releases, Settings — that magnify and show a tooltip on
+hover, with a divider before Settings. Page title "Mission Control" sits above the
+content: 5 metric cards (Active PRs, Open Releases, Last Deploy, Repo Status, Build
+Health), Merge Activity + Deployment Timeline + Release Frequency charts, and
+Development/Staging/Main status widgets with radar sweeps and runway-stripe accents.
 
 ## 9. Dependencies to add (Phase 1)
 
@@ -191,8 +203,8 @@ Already present: `framer-motion`, `next-themes`, `lucide-react`, VengeanceUI set
 
 ## 10. Accessibility & responsive
 
-- Desktop-first; sidebar collapses to icons/drawer on tablet/mobile; status/PR
-  tables become stacked cards in later phases.
+- Desktop-first; on tablet/mobile the dock stays bottom-centered and the top strip
+  condenses (repo selector + menu); status/PR tables become stacked cards later.
 - Respect `prefers-reduced-motion` (gate radar sweeps, counters, transitions).
 - Color is never the only status signal (icon + label accompany every status color).
 
@@ -200,13 +212,16 @@ Already present: `framer-motion`, `next-themes`, `lucide-react`, VengeanceUI set
 
 - `npx tsc --noEmit` clean; `next build` succeeds.
 - App boots; `/` redirects to `/dashboard`.
-- Sidebar navigates to all five routes (placeholders render for non-dashboard).
-- Repository selector switches the active repo and persists across reload; header
-  reflects the selection.
+- Glass dock navigates to Dashboard / Pull Requests / Releases / Settings with the
+  active item highlighted; Pull Requests shows Development / Staging tabs; non-dashboard
+  pages render styled placeholders.
+- Repository selector (top strip) switches the active repo and persists across reload;
+  the header reflects the selection.
 - Dashboard renders 5 cards + 3 charts + 3 status widgets from `MockDataService`,
   with animated counters, fade-in stagger, and radar sweeps.
 - Dark default; light toggle works with no unreadable text in either mode.
-- Layout holds at desktop, tablet, and mobile widths.
+- Layout holds at desktop, tablet, and mobile widths; dock and top strip stay usable
+  on small screens.
 
 ## 12. Risks / open items
 
