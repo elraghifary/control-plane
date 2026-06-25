@@ -7,6 +7,13 @@ import { MergeActivityChart } from "./charts/merge-activity-chart";
 import { ReleaseFrequencyChart } from "./charts/release-frequency-chart";
 import { DeploymentTimelineChart } from "./charts/deployment-timeline-chart";
 import { FadeInUp } from "@/components/motion/fade-in";
+import { cn } from "@/lib/utils";
+
+const REPO_STATUS_TONE = {
+  operational: "text-status-healthy",
+  degraded: "text-status-warn",
+  down: "text-status-error",
+} as const;
 
 export function DashboardView({ summary, envs, merge, release, timeline }: {
   summary: DashboardSummary; envs: EnvironmentStatus[];
@@ -23,7 +30,7 @@ export function DashboardView({ summary, envs, merge, release, timeline }: {
         <MetricCard label="Active PRs" value={summary.activePullRequests} delta="▲ this week" deltaTone="healthy" icon={GitPullRequest} />
         <MetricCard label="Open Releases" value={summary.openReleases} delta="awaiting publish" deltaTone="warn" icon={Tag} />
         <MetricCard label="Last Deploy" icon={Rocket} footer={<div className="mt-2 font-mono text-sm">{summary.lastDeployment.sha}</div>} />
-        <MetricCard label="Repo Status" icon={Radar} footer={<div className="mt-2 text-sm font-medium text-status-healthy capitalize">{summary.repositoryStatus}</div>} />
+        <MetricCard label="Repo Status" icon={Radar} footer={<div className={cn("mt-2 text-sm font-medium capitalize", REPO_STATUS_TONE[summary.repositoryStatus])}>{summary.repositoryStatus}</div>} />
         <MetricCard label="Build Health" value={summary.buildHealthPct} suffix="%" delta="last 14 days" deltaTone="muted" icon={Activity} />
       </div>
 
