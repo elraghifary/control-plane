@@ -1,4 +1,7 @@
-import { scryptSync, randomBytes, timingSafeEqual, createCipheriv, createDecipheriv, hkdfSync } from "node:crypto";
+import { scryptSync, randomBytes, timingSafeEqual, createCipheriv, createDecipheriv, hkdfSync, type ScryptOptions } from "node:crypto";
+
+// Pinned so a future change to Node's scrypt defaults can't invalidate stored hashes.
+const SCRYPT: ScryptOptions = { N: 16384, r: 8, p: 1 };
 
 function patKey(): Buffer {
   const secret = process.env.AUTH_SECRET;
@@ -8,7 +11,7 @@ function patKey(): Buffer {
 
 export function hashPassword(password: string): string {
   const salt = randomBytes(16);
-  const hash = scryptSync(password, salt, 64);
+  const hash = scryptSync(password, salt, 64, SCRYPT);
   return `${salt.toString("hex")}:${hash.toString("hex")}`;
 }
 
@@ -16,7 +19,7 @@ export function verifyPassword(password: string, stored: string): boolean {
   const [saltHex, hashHex] = stored.split(":");
   if (!saltHex || !hashHex) return false;
   const expected = Buffer.from(hashHex, "hex");
-  const actual = scryptSync(password, Buffer.from(saltHex, "hex"), 64);
+  const actual = scryptSync(password, Buffer.from(saltHex, "hex"), 64, SCRYPT);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 

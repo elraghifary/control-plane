@@ -14,6 +14,7 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
   const pat = String(formData.get("pat") ?? "").trim();
 
   if (!username || !password || !pat) return { ok: false, error: "All fields are required." };
+  if (!/^[a-z0-9_-]{2,32}$/.test(username)) return { ok: false, error: "Username must be 2–32 chars: letters, numbers, hyphen, underscore." };
   if (password.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
 
   const identity = await validatePat(pat);
