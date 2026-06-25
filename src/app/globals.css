@@ -143,3 +143,7 @@
     @apply font-sans;
   }
 }
+
+@keyframes cp-sweep { to { transform: rotate(360deg); } }
+@keyframes cp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes cp-shimmer { 100% { transform: translateX(100%); } }
