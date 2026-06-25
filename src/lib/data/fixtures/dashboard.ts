@@ -36,5 +36,5 @@ export function releaseFrequencyFor(slug: string): ReleaseFrequencyPoint[] {
 export function deploymentTimelineFor(slug: string): DeploymentTimelinePoint[] {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   const s = seed(slug);
-  return days.map((day, i) => ({ day, status: (i + s) % 4 === 0 ? "in_progress" : "success" }));
+  return days.map((day, i) => ({ day, status: (i + s) % 4 === 0 ? "in_progress" : (i + s) % 7 === 0 ? "failed" : "success" }));
 }

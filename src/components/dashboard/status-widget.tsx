@@ -28,7 +28,7 @@ export function StatusWidget({ status }: { status: EnvironmentStatus }) {
         </div>
       </div>
       <div className="mt-1.5 font-mono text-[10px] text-muted-foreground">
-        {status.progressPct ? `deploy in progress · ${status.progressPct}%` : `marker · ${status.marker}`}
+        {status.progressPct != null ? `deploy in progress · ${status.progressPct}%` : `marker · ${status.marker}`}
       </div>
     </div>
   );

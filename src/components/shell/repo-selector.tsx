@@ -17,6 +17,8 @@ export function RepoSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className="flex items-center gap-2 rounded-lg border border-border bg-card/40 px-3 py-1.5 text-sm text-foreground/80 backdrop-blur transition-colors hover:border-instrument/40"
       >
         <Folder className="h-4 w-4 text-instrument" />
@@ -36,9 +38,10 @@ export function RepoSelector() {
               <li key={r.id}>
                 <button
                   onClick={() => { setSelectedRepo(r.slug); setOpen(false); }}
+                  disabled={!r.enabled}
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-sm hover:bg-accent",
-                    !r.enabled && "opacity-40"
+                    !r.enabled && "opacity-40 hover:bg-transparent cursor-not-allowed"
                   )}
                 >
                   <span className="font-mono">{r.name}</span>
