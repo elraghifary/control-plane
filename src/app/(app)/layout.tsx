@@ -1,8 +1,12 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { TopStrip } from "@/components/shell/top-strip";
 import { GlassDockNav } from "@/components/shell/glass-dock-nav";
 import { GridField } from "@/components/motifs/grid-field";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
   return (
     <div className="relative min-h-screen overflow-hidden">
       <GridField />
