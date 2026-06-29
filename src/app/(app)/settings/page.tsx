@@ -1,10 +1,14 @@
-import { EmptyState } from "@/components/states/empty-state";
-export default function Page() {
+import { auth } from "@/auth";
+import { ChangePasswordForm, ChangePatForm } from "./settings-form";
+
+export default async function SettingsPage() {
+  const session = await auth();
   return (
     <div>
       <h1 className="text-lg font-medium">Settings</h1>
-      <div className="mt-5">
-        <EmptyState title="Settings" description="GitHub token and repository management arrive in a later phase." />
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <ChangePasswordForm />
+        <ChangePatForm githubLogin={session?.user?.githubLogin} />
       </div>
     </div>
   );

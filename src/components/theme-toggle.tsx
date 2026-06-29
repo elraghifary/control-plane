@@ -15,7 +15,7 @@ export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
-  React.useEffect(() => setMounted(true), []);
+  React.useEffect(() => { React.startTransition(() => setMounted(true)); }, []);
 
   if (!mounted) return <div className="w-9 h-9" />;
 

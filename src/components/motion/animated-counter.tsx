@@ -13,7 +13,7 @@ export function AnimatedCounter({ value, className, suffix }: { value: number; c
 
   React.useEffect(() => {
     if (!inView) return;
-    if (shouldReduceMotion) setDisplay(value);
+    if (shouldReduceMotion) React.startTransition(() => setDisplay(value));
     else mv.set(value);
   }, [inView, value, mv, shouldReduceMotion]);
 

@@ -51,6 +51,59 @@
   --color-status-healthy: var(--status-healthy);
   --color-status-warn: var(--status-warn);
   --color-status-error: var(--status-error);
+
+  /* ── HappyKids brand palette ── */
+  --color-hk-navy-100: var(--hk-navy-100);
+  --color-hk-navy-200: var(--hk-navy-200);
+  --color-hk-navy-300: var(--hk-navy-300);
+  --color-hk-navy-400: var(--hk-navy-400);
+  --color-hk-navy-500: var(--hk-navy-500);
+  --color-hk-navy-600: var(--hk-navy-600);
+  --color-hk-navy-700: var(--hk-navy-700);
+  --color-hk-navy-800: var(--hk-navy-800);
+  --color-hk-navy-900: var(--hk-navy-900);
+
+  --color-hk-yellow-100: var(--hk-yellow-100);
+  --color-hk-yellow-300: var(--hk-yellow-300);
+  --color-hk-yellow-500: var(--hk-yellow-500);
+  --color-hk-yellow-700: var(--hk-yellow-700);
+  --color-hk-yellow-900: var(--hk-yellow-900);
+
+  --color-hk-red-100: var(--hk-red-100);
+  --color-hk-red-300: var(--hk-red-300);
+  --color-hk-red-500: var(--hk-red-500);
+  --color-hk-red-700: var(--hk-red-700);
+  --color-hk-red-900: var(--hk-red-900);
+
+  --color-hk-amber-100: var(--hk-amber-100);
+  --color-hk-amber-300: var(--hk-amber-300);
+  --color-hk-amber-500: var(--hk-amber-500);
+  --color-hk-amber-700: var(--hk-amber-700);
+  --color-hk-amber-900: var(--hk-amber-900);
+
+  --color-hk-purple-100: var(--hk-purple-100);
+  --color-hk-purple-300: var(--hk-purple-300);
+  --color-hk-purple-500: var(--hk-purple-500);
+  --color-hk-purple-700: var(--hk-purple-700);
+  --color-hk-purple-900: var(--hk-purple-900);
+
+  --color-hk-pink-100: var(--hk-pink-100);
+  --color-hk-pink-300: var(--hk-pink-300);
+  --color-hk-pink-500: var(--hk-pink-500);
+  --color-hk-pink-700: var(--hk-pink-700);
+  --color-hk-pink-900: var(--hk-pink-900);
+
+  --color-hk-blue-100: var(--hk-blue-100);
+  --color-hk-blue-300: var(--hk-blue-300);
+  --color-hk-blue-500: var(--hk-blue-500);
+  --color-hk-blue-700: var(--hk-blue-700);
+  --color-hk-blue-900: var(--hk-blue-900);
+
+  --color-hk-teal-100: var(--hk-teal-100);
+  --color-hk-teal-300: var(--hk-teal-300);
+  --color-hk-teal-500: var(--hk-teal-500);
+  --color-hk-teal-700: var(--hk-teal-700);
+  --color-hk-teal-900: var(--hk-teal-900);
 }
 
 :root {
@@ -60,8 +113,8 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: var(--hk-yellow-500);
+  --primary-foreground: var(--hk-navy-500);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -86,11 +139,65 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --instrument: oklch(0.62 0.12 233);
-  --instrument-2: oklch(0.55 0.18 277);
-  --status-healthy: oklch(0.62 0.13 165);
-  --status-warn: oklch(0.70 0.15 80);
-  --status-error: oklch(0.60 0.19 22);
+  /* ── HappyKids brand palette ── */
+  --hk-navy-100: #F8F8F8;
+  --hk-navy-200: #BECACF;
+  --hk-navy-300: #A2B1B8;
+  --hk-navy-400: #667880;
+  --hk-navy-500: #1B3844;
+  --hk-navy-600: #162D37;
+  --hk-navy-700: #102128;
+  --hk-navy-800: #09151A;
+  --hk-navy-900: #061014;
+
+  --hk-yellow-100: #FFF9CC;
+  --hk-yellow-300: #FEF29A;
+  --hk-yellow-500: #FEEC67;
+  --hk-yellow-700: #FDE006;
+  --hk-yellow-900: #CFB701;
+
+  --hk-red-100: #FCE8E6;
+  --hk-red-300: #F9BCB8;
+  --hk-red-500: #F47068;
+  --hk-red-700: #F14E46;
+  --hk-red-900: #EE1C10;
+
+  --hk-amber-100: #FFE8C2;
+  --hk-amber-300: #FCC974;
+  --hk-amber-500: #FBB73D;
+  --hk-amber-700: #E79B25;
+  --hk-amber-900: #B86E0F;
+
+  --hk-purple-100: #F3EDFD;
+  --hk-purple-300: #E0CEF8;
+  --hk-purple-500: #B083F0;
+  --hk-purple-700: #A36DED;
+  --hk-purple-900: #9457EB;
+
+  --hk-pink-100: #FFD6EB;
+  --hk-pink-300: #FFB3D8;
+  --hk-pink-500: #FC8EC7;
+  --hk-pink-700: #E275AD;
+  --hk-pink-900: #AE4C82;
+
+  --hk-blue-100: #E7F1FE;
+  --hk-blue-300: #A8CDFA;
+  --hk-blue-500: #529BF5;
+  --hk-blue-700: #3188F3;
+  --hk-blue-900: #0E74F1;
+
+  --hk-teal-100: #D4FBF4;
+  --hk-teal-300: #60EFD5;
+  --hk-teal-500: #15D1AE;
+  --hk-teal-700: #15BE9F;
+  --hk-teal-900: #12A78B;
+
+  /* ── Semantic accent / status tokens ── */
+  --instrument: var(--hk-blue-700);
+  --instrument-2: var(--hk-purple-700);
+  --status-healthy: var(--hk-teal-700);
+  --status-warn: var(--hk-amber-500);
+  --status-error: var(--hk-red-700);
 }
 
 .dark {
@@ -100,8 +207,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: var(--hk-yellow-500);
+  --primary-foreground: var(--hk-navy-500);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -125,11 +232,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-  --instrument: oklch(0.746 0.123 233);   /* ~#38bdf8 */
-  --instrument-2: oklch(0.60 0.20 277);   /* ~#6366f1 */
-  --status-healthy: oklch(0.78 0.14 165); /* ~#34d399 */
-  --status-warn: oklch(0.83 0.16 85);     /* ~#fbbf24 */
-  --status-error: oklch(0.71 0.17 18);    /* ~#f87171 */
+  --instrument: var(--hk-blue-300);
+  --instrument-2: var(--hk-purple-300);
+  --status-healthy: var(--hk-teal-300);
+  --status-warn: var(--hk-amber-300);
+  --status-error: var(--hk-red-300);
 }
 
 @layer base {
@@ -147,3 +254,43 @@
 @keyframes cp-sweep { to { transform: rotate(360deg); } }
 @keyframes cp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 @keyframes cp-shimmer { 100% { transform: translateX(100%); } }
+
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.glow-conic {
+  --glow-angle: 0deg;
+  border-color: transparent;
+  background: conic-gradient(
+    from var(--glow-angle),
+    var(--glow-color-1),
+    var(--glow-color-2),
+    var(--glow-color-3),
+    var(--glow-color-4),
+    var(--glow-color-5),
+    var(--glow-color-6),
+    var(--glow-color-7),
+    var(--glow-color-8),
+    var(--glow-color-9),
+    var(--glow-color-10),
+    var(--glow-color-1)
+  ) border-box;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: glow-conic-spin var(--glow-animation-duration, 4s) linear infinite;
+}
+
+@keyframes glow-conic-spin {
+  to {
+    --glow-angle: 360deg;
+  }
+}

@@ -61,4 +61,14 @@ export class JsonFileStore implements Store {
       await this.write(users);
     });
   }
+
+  updateUserPassword(id: string, passwordHash: string): Promise<void> {
+    return this.run(async () => {
+      const users = await this.read();
+      const user = users.find((u) => u.id === id);
+      if (!user) throw new Error("User not found");
+      user.passwordHash = passwordHash;
+      await this.write(users);
+    });
+  }
 }

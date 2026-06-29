@@ -4,7 +4,7 @@ import type { MergeActivityPoint } from "@/lib/data";
 
 export function MergeActivityChart({ data }: { data: MergeActivityPoint[] }) {
   return (
-    <ResponsiveContainer width="100%" height={120}>
+    <ResponsiveContainer width="100%" height={140}>
       <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="cpMerge" x1="0" y1="0" x2="0" y2="1">
@@ -12,8 +12,18 @@ export function MergeActivityChart({ data }: { data: MergeActivityPoint[] }) {
             <stop offset="100%" stopColor="var(--instrument)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <XAxis dataKey="date" hide />
-        <Tooltip cursor={{ stroke: "var(--instrument)", strokeOpacity: 0.3 }} contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(d) => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        />
+        <Tooltip
+          cursor={{ stroke: "var(--instrument)", strokeOpacity: 0.3 }}
+          contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+          labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+        />
         <Area type="monotone" dataKey="merges" stroke="var(--instrument)" strokeWidth={2} fill="url(#cpMerge)" />
       </AreaChart>
     </ResponsiveContainer>

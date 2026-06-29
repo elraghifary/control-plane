@@ -15,4 +15,5 @@ export interface Store {
   getUserById(id: string): Promise<User | null>;
   createUser(input: NewUser): Promise<User>;
   updateUserPat(id: string, patEncrypted: string): Promise<void>;
+  updateUserPassword(id: string, passwordHash: string): Promise<void>;
 }

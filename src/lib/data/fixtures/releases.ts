@@ -1,0 +1,51 @@
+import type { Release } from "../types";
+
+export function releasesFor(slug: string): Release[] {
+  return [
+    {
+      id: 1,
+      slug,
+      tagName: "v2.4.1",
+      name: "v2.4.1",
+      body: "## What's Changed\n* Fix login redirect loop by @elra in #42\n* Patch cookie expiry handling by @elra in #43\n\n**Full Changelog**: https://github.com/" + slug + "/compare/v2.4.0...v2.4.1",
+      isLatest: true,
+      isDraft: false,
+      isPrerelease: false,
+      targetBranch: "main",
+      publishedAt: "2026-06-20T10:00:00Z",
+      createdAt: "2026-06-20T10:00:00Z",
+      htmlUrl: `https://github.com/${slug}/releases/tag/v2.4.1`,
+      author: "elra",
+    },
+    {
+      id: 2,
+      slug,
+      tagName: "v2.4.0",
+      name: "v2.4.0",
+      body: "## What's Changed\n* Add staging sync feature by @elra in #38\n* Improve pull request list UI by @elra in #39\n* Add review dialog by @elra in #40\n\n**Full Changelog**: https://github.com/" + slug + "/compare/v2.3.0...v2.4.0",
+      isLatest: false,
+      isDraft: false,
+      isPrerelease: false,
+      targetBranch: "main",
+      publishedAt: "2026-06-10T08:00:00Z",
+      createdAt: "2026-06-10T08:00:00Z",
+      htmlUrl: `https://github.com/${slug}/releases/tag/v2.4.0`,
+      author: "elra",
+    },
+    {
+      id: 3,
+      slug,
+      tagName: "v2.3.0",
+      name: "v2.3.0",
+      body: "## What's Changed\n* Auth refactor with JWT session by @elra in #35\n* Dark mode improvements by @elra in #36\n* Add animated counters by @elra in #37\n\n**Full Changelog**: https://github.com/" + slug + "/compare/v2.2.0...v2.3.0",
+      isLatest: false,
+      isDraft: false,
+      isPrerelease: false,
+      targetBranch: "main",
+      publishedAt: "2026-05-28T14:00:00Z",
+      createdAt: "2026-05-28T14:00:00Z",
+      htmlUrl: `https://github.com/${slug}/releases/tag/v2.3.0`,
+      author: "elra",
+    },
+  ];
+}

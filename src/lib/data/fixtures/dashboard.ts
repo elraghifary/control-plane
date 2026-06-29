@@ -6,11 +6,9 @@ export function summaryFor(slug: string): DashboardSummary {
   const s = seed(slug);
   return {
     activePullRequests: 8 + s,
-    openReleases: 2 + (s % 4),
-    lastDeployment: { env: "main", ref: "main", sha: "a1b2c3d", deployedAt: new Date(0).toISOString(), status: "success" },
-    repositoryStatus: s % 5 === 0 ? "degraded" : "operational",
+    totalReleases: 12 + (s % 4),
+    lastDeployment: { env: "main", ref: "v2.4.1", sha: "v2.4.1", deployedAt: "2026-06-20T10:00:00.000Z", status: "success" },
     servicesOnline: 6,
-    buildHealthPct: 90 + (s % 10),
   };
 }
 
@@ -25,7 +23,13 @@ export function envStatusesFor(slug: string): EnvironmentStatus[] {
 
 export function mergeActivityFor(slug: string): MergeActivityPoint[] {
   const s = seed(slug);
-  return Array.from({ length: 14 }, (_, i) => ({ date: `D${i + 1}`, merges: Math.max(0, Math.round(3 + Math.sin(i / 2 + s) * 3 + i / 4)) }));
+  const now = new Date();
+  const daysSinceWed = (now.getUTCDay() - 3 + 7) % 7;
+  const wedMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceWed);
+  return Array.from({ length: 7 }, (_, i) => ({
+    date: new Date(wedMs + i * 86400000).toISOString().slice(0, 10),
+    merges: Math.max(0, Math.round(3 + Math.sin(i / 2 + s) * 3 + i / 4)),
+  }));
 }
 
 export function releaseFrequencyFor(slug: string): ReleaseFrequencyPoint[] {
