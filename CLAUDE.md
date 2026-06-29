@@ -22,7 +22,7 @@ npx tsc --noEmit      # Type-check; must be clean — this is the primary verifi
 
 ## Architecture
 
-Control Plane is a premium DevOps mission-control dashboard for driving GitHub deployments across `development → staging → main`, themed as an aircraft control tower. **Current state: Phase 2/3 (Auth + Octokit read).** Authenticated users get live GitHub data on the dashboard via `getDataService()`; pull-requests, releases, and settings routes are still styled placeholders. Read `docs/superpowers/specs/2026-06-26-control-plane-auth-octokit-design.md` for the latest spec and `docs/superpowers/specs/2026-06-25-control-plane-design.md` for the full phased roadmap.
+Control Plane is a premium DevOps mission-control dashboard for driving GitHub deployments across `development → staging → main`, themed as an aircraft control tower. **Current state: Phase 2 complete.** All core pages are live with real GitHub data: dashboard, pull requests (list/review/merge/sync), releases (list/publish), and settings. Read `docs/superpowers/specs/2026-06-26-control-plane-auth-octokit-design.md` for the auth+data spec and `docs/superpowers/specs/2026-06-25-control-plane-design.md` for the full phased roadmap.
 
 ### Auth & persistence (`src/auth.ts`, `src/lib/store/`, `src/lib/auth/`)
 
@@ -47,27 +47,30 @@ Pages fetch in **Server Components** and pass plain data down to Client Componen
 
 - Route group **`(app)`** — auth-guarded; `layout.tsx` fetches repos via `getDataService()` and renders `<GridField />`, `<TopStrip repos selected githubLogin />`, and `<GlassDockNav />`. **No left sidebar**; full-bleed with bottom padding for the dock.
 - `(app)/template.tsx` wraps page content in a Framer Motion `PageTransition` (templates re-mount on navigation; layouts do not — this is why the transition lives in a template, not the layout).
-- `/` redirects to `/dashboard`. Routes: `dashboard`, `pull-requests` (+ nested `layout.tsx` with `development`/`staging` tab strip), `releases`, `settings`.
+- `/` redirects to `/dashboard`. Routes: `dashboard`, `pull-requests`, `releases`, `settings`.
 - Dock active state is derived from `usePathname()` matching against the `ROUTES` array in `glass-dock-nav.tsx`.
 
 ### State & theming
 
-- **Selected repository**: `cp-repo` httpOnly-readable cookie (set by `RepoSelector` client component). Layout + dashboard both read it server-side. Optional env `CONTROL_PLANE_GITHUB_ORGS` adds org repos to the list.
+- **Selected repository**: `cp-repository` httpOnly-readable cookie (set by `RepositorySelector` client component). Layout + all pages read it server-side. Optional env `CONTROL_PLANE_GITHUB_ORGS` adds org repos to the list.
 - **Theme**: `next-themes` in `src/app/providers.tsx`, `attribute="class"`, **dark default**, system disabled. Sonner `<Toaster />` lives here too.
 
 ### Component organization (`src/components/`)
 
-- `ui/` — large library of reusable/VengeanceUI presentational components (buttons, cards, motion toys). The shell reuses `glass-dock`, `animated-number`, `glow-border-card`. Many others are reserved for later phases — don't assume all are wired in.
-- `shell/` — app chrome: `top-strip`, `glass-dock-nav`, `repo-selector`.
+- `ui/` — shared primitives: `button`, `badge`, `dialog`, `popover`, `command`, `button-group`, etc.
+- `shell/` — app chrome: `top-strip`, `glass-dock-nav`, `repository-selector`.
 - `dashboard/` — `metric-card`, `status-widget`, `dashboard-view`, and `charts/` (Recharts wrappers consuming `--chart-*` tokens).
+- `pull-requests/` — `pr-list`, `pr-card`, `review-dialog`, `sync-staging-dialog`, `markdown-view`, `pr-files-viewer`.
+- `releases/` — `release-card`, `publish-release-dialog`.
 - `motifs/` — aviation design primitives: `radar-rings`, `runway-stripes`, `hud-corners`, `grid-field`.
 - `motion/` — `page-transition`, `fade-in`, `animated-counter`.
-- `states/` — `skeleton`, `empty-state`, `error-state`.
+- `states/` — `empty-state`, `error-state`.
 
 ### Styling conventions
 
 - Tailwind **v4** (config-less; theme tokens live in `src/app/globals.css` via `@theme`). Import via `@/` alias (maps to `src/`). Use `cn()` from `@/lib/utils` for class merging.
-- The neutral shadcn tokens in `globals.css` are **locked — do not change them.** Accent/status colors are layered on as separate variables: `instrument` (cyan), `instrument-2` (indigo), `status-healthy`/`status-warn`/`status-error`.
+- The neutral shadcn tokens in `globals.css` are **locked — do not change them.** `--primary` is set to HappyKids yellow (`--hk-yellow-500`) with navy foreground. Accent/status colors are layered on as separate variables: `instrument` (blue), `instrument-2` (purple), `status-healthy`/`status-warn`/`status-error`.
+- **HappyKids brand palette** is defined in `globals.css` as `--hk-navy-*`, `--hk-yellow-*`, `--hk-red`, `--hk-amber`, `--hk-purple`, `--hk-pink`, `--hk-blue`, `--hk-teal` and exposed as Tailwind tokens (`text-hk-navy-500`, etc.).
 - **Reference colors via Tailwind tokens** (`text-instrument`, `bg-status-healthy`), never hardcoded hex.
 - Every component must stay readable in **both** dark and light mode — use semantic tokens, not raw white-alpha.
 - Respect `prefers-reduced-motion` for all looping/entrance animations (radar sweeps, counters, page transitions).
@@ -76,7 +79,16 @@ Pages fetch in **Server Components** and pass plain data down to Client Componen
 ## Working in this repo
 
 - Work is spec-driven and phased: a spec → plan → implementation cycle lives in `docs/superpowers/`. Stay within the current phase's scope; don't build ahead speculatively.
-- Branch: feature work happens off `main` (current: `control-plane-foundations`). Commit after each logical task.
+- Branch: feature work happens off `main`. Commit after each logical task.
+
+### Dialog conventions
+
+All multi-step dialogs follow this structure:
+- Header: `px-5 py-4` with `text-base` title
+- Content: `px-5 py-5` scrollable area
+- Footer: `flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4`
+- Form labels: `mb-3 block text-xs font-medium uppercase tracking-wide text-muted-foreground`
+- No icons on action buttons; `rounded-full` on all buttons
 
 ## Some rules
 - Do not commit each file, just summarize and use one commit

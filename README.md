@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Control Plane
+
+A premium DevOps mission-control dashboard for driving GitHub deployments across `development → staging → main`, themed as an aircraft control tower.
+
+Built for [happykids.id](https://happykids.id) with Next.js 16 + React 19.
+
+---
+
+## Features
+
+- **Live GitHub data** — dashboard metrics, pull requests, and releases pulled in real-time via Octokit
+- **Pull request management** — list, review, merge, close, reopen, and sync development → staging across multiple repositories
+- **Releases** — browse release history with full markdown changelogs; publish new minor/patch releases with auto-generated notes
+- **Auth** — GitHub PAT-based login; token stored AES-256-GCM encrypted at rest, never sent to the client
+- **Repository selector** — switch between repositories from the top bar; state persisted in a cookie
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16.2.9 (App Router) |
+| UI | React 19.2.4, Tailwind v4, Radix UI |
+| Auth | Auth.js v5 (Credentials + JWT) |
+| GitHub | Octokit REST |
+| Charts | Recharts |
+| Markdown | react-markdown + remark-gfm |
+| Animations | Framer Motion |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- Yarn 1.x
+- A GitHub Personal Access Token with `repo` and `read:org` scopes
+
+### Setup
 
 ```bash
-npm run dev
-# or
+cp .env.example .env.local
+# fill in AUTH_SECRET and optionally CONTROL_PLANE_GITHUB_ORGS
+yarn install
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Register with your GitHub PAT to connect.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required | Description |
+|---|---|---|
+| `AUTH_SECRET` | Yes | Random secret for Auth.js JWT signing (`openssl rand -base64 32`) |
+| `CONTROL_PLANE_GITHUB_ORGS` | No | Comma-separated org names to include in the repo selector |
 
-## Learn More
+## Commands
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+yarn dev          # Start dev server
+yarn build        # Production build
+yarn lint         # ESLint
+npx tsc --noEmit  # Type-check (primary verification gate)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    (auth)/         # Login & register (no shell)
+    (app)/          # Auth-guarded app shell
+      dashboard/
+      pull-requests/
+      releases/
+      settings/
+  components/
+    dashboard/      # Metric cards, status widgets, charts
+    pull-requests/  # PR list, review dialog, sync staging dialog
+    releases/       # Release cards, publish dialog
+    shell/          # Top strip, repository selector, dock nav
+    motifs/         # Aviation design primitives (radar, runway, HUD)
+    motion/         # Page transitions, animated counter
+    states/         # Empty state, error state
+    ui/             # Shared primitives (Button, Badge, Dialog, …)
+  lib/
+    auth/           # AES-256-GCM crypto helpers
+    data/           # DataService interface + OctokitDataService + MockDataService
+    store/          # JsonFileStore (user accounts)
+```
