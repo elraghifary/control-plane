@@ -1,5 +1,5 @@
-import { JsonFileStore } from "./json-file-store";
+import { SupabaseStore } from "./supabase-store";
 import type { Store } from "./store";
 
-export const store: Store = new JsonFileStore();
+export const store: Store = new SupabaseStore();
 export type { User, NewUser, Store } from "./store";
