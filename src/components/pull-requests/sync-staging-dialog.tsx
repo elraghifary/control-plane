@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { prepareStagingPR, mergePullRequest } from "@/app/(app)/pull-requests/actions";
+import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 
 type Step = "select" | "confirm" | "running" | "done";
 
@@ -89,7 +90,7 @@ export function SyncStagingDialog({
   return (
     <>
       <Button size="sm" onClick={handleOpen}>
-        Sync Staging
+        Sync staging
       </Button>
 
       <Dialog open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
@@ -181,9 +182,8 @@ export function SyncStagingDialog({
 
           {/* ── Running step ── */}
           {step === "running" && (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 px-4">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-instrument border-t-transparent" />
-              <p className="text-sm text-muted-foreground">{currentMsg}</p>
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <KineticTextLoader className="scale-[0.45] overflow-hidden" />
             </div>
           )}
 

@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useNavigationLoading } from "@/components/navigation-loading";
 
-export function RepositorySelector({ repositories, selected }: { repositories: Repository[]; selected: string }) {
+export function RepositorySelector({ repositories, selected, className }: { repositories: Repository[]; selected: string; className?: string }) {
   const { replaceAndRefresh } = useNavigationLoading();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export function RepositorySelector({ repositories, selected }: { repositories: R
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="min-w-56 justify-between border-border bg-card/40 font-mono text-xs backdrop-blur hover:border-instrument/40"
+          className={cn("min-w-56 justify-between border-border bg-card/40 font-mono text-xs backdrop-blur hover:border-instrument/40", className)}
         >
           <span className="flex min-w-0 items-center gap-2">
             <Folder className="size-4 shrink-0 text-instrument" />

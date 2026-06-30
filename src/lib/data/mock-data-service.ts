@@ -53,6 +53,16 @@ export class MockDataService implements DataService {
     return { slug, created: true, prNumber: 99, prUrl: `https://github.com/${slug}/pull/99` };
   }
   async listBranches(_slug: string) { return ["main", "development", "staging"]; }
+  async createPullRequest(slug: string, _title: string, _head: string, _base: string, _body: string) {
+    return { number: 100, htmlUrl: `https://github.com/${slug}/pull/100` };
+  }
+  async compareBranches(_slug: string, _base: string, _head: string) {
+    return [
+      { filename: "src/app/page.tsx", status: "modified" as const, additions: 12, deletions: 3 },
+      { filename: "src/components/new-feature.tsx", status: "added" as const, additions: 45, deletions: 0 },
+      { filename: "README.md", status: "modified" as const, additions: 2, deletions: 1 },
+    ];
+  }
   async listReleases(slug: string) { return releasesFor(slug); }
   async generateReleaseNotes(_slug: string, tagName: string): Promise<string> {
     return `## What's Changed\n* Mock changes for ${tagName} by @elra in #100\n\n**Full Changelog**: https://github.com/example/repo/compare/v0.0.0...${tagName}`;

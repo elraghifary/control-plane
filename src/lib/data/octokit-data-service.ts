@@ -445,6 +445,32 @@ export class OctokitDataService implements DataService {
     }
   }
 
+  async compareBranches(slug: string, base: string, head: string): Promise<PullRequestFileChange[]> {
+    const { owner, repo } = parseSlug(slug);
+    try {
+      const res = await this.octokit.rest.repos.compareCommitsWithBasehead({
+        owner, repo, basehead: `${base}...${head}`,
+      });
+      return (res.data.files ?? []).map((f) => ({
+        filename: f.filename,
+        status: f.status as PullRequestFileChange["status"],
+        additions: f.additions,
+        deletions: f.deletions,
+        patch: f.patch,
+        previousFilename: f.previous_filename ?? undefined,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  async createPullRequest(slug: string, title: string, head: string, base: string, body: string): Promise<{ number: number; htmlUrl: string }> {
+    const { owner, repo } = parseSlug(slug);
+    const res = await this.octokit.rest.pulls.create({ owner, repo, title, head, base, body });
+    this.invalidatePullRequestCache();
+    return { number: res.data.number, htmlUrl: res.data.html_url };
+  }
+
   async listBranches(slug: string): Promise<string[]> {
     return this.cached(`branches:${slug}`, async () => {
       const { owner, repo } = parseSlug(slug);

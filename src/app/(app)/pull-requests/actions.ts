@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getDataService } from "@/lib/data/get-data-service";
 import type { PullRequestReviewEvent } from "@/lib/data/data-service";
-import type { PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult } from "@/lib/data/types";
+import type { PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestFileChange } from "@/lib/data/types";
 
 export async function fetchPullRequest(slug: string, number: number): Promise<PullRequest> {
   const data = await getDataService();
@@ -106,4 +106,31 @@ export async function syncStaging(slugs: string[]): Promise<StagingCreateResult[
   const results = await Promise.all(slugs.map((slug) => data.createStagingPR(slug)));
   revalidatePath("/pull-requests");
   return results;
+}
+
+export async function compareBranchesAction(slug: string, base: string, head: string): Promise<PullRequestFileChange[]> {
+  const data = await getDataService();
+  return data.compareBranches(slug, base, head);
+}
+
+export async function listBranchesAction(slug: string): Promise<string[]> {
+  const data = await getDataService();
+  return data.listBranches(slug);
+}
+
+export async function createPullRequestAction(
+  slug: string,
+  title: string,
+  head: string,
+  base: string,
+  body: string,
+): Promise<{ ok: boolean; number?: number; htmlUrl?: string; error?: string }> {
+  try {
+    const data = await getDataService();
+    const result = await data.createPullRequest(slug, title, head, base, body);
+    revalidatePath("/pull-requests");
+    return { ok: true, ...result };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed to create pull request" };
+  }
 }

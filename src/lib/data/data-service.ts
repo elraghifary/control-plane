@@ -21,6 +21,8 @@ export interface DataService {
   createStagingPR(slug: string): Promise<StagingCreateResult>;
   prepareStagingPR(slug: string): Promise<StagingPrepareResult>;
   listBranches(slug: string): Promise<string[]>;
+  createPullRequest(slug: string, title: string, head: string, base: string, body: string): Promise<{ number: number; htmlUrl: string }>;
+  compareBranches(slug: string, base: string, head: string): Promise<PullRequestFileChange[]>;
   listReleases(slug: string): Promise<Release[]>;
   generateReleaseNotes(slug: string, tagName: string, targetBranch: string, previousTag?: string): Promise<string>;
   publishRelease(slug: string, tagName: string, targetBranch: string, body: string): Promise<PublishReleaseResult>;

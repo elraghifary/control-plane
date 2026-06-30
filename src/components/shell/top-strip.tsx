@@ -2,22 +2,21 @@
 import { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, GitPullRequest, Tag, Settings, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, GitPullRequest, Tag, Settings, LogOut, Menu, X, MessagesSquare } from "lucide-react";
 import { signOut } from "next-auth/react";
-import type { Repository } from "@/lib/data";
 import { ControlPlaneMark } from "@/components/brand/control-plane-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { RepositorySelector } from "./repository-selector";
 import { cn } from "@/lib/utils";
 
 const ROUTES = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/pull-requests", label: "Pull Requests", icon: GitPullRequest },
   { href: "/releases", label: "Releases", icon: Tag },
+  { href: "/clickup/pull-requests", label: "ClickUp Pull Requests", icon: MessagesSquare },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function TopStrip({ repositories, selected, githubLogin }: { repositories: Repository[]; selected: string; githubLogin?: string }) {
+export function TopStrip({ githubLogin }: { githubLogin?: string }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -41,10 +40,6 @@ export function TopStrip({ repositories, selected, githubLogin }: { repositories
         <ControlPlaneMark />
         <div className="leading-tight">
           <div className="text-sm font-medium">Control Plane</div>
-        </div>
-        <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
-        <div className="hidden sm:block">
-          <RepositorySelector repositories={repositories} selected={selected} />
         </div>
         <div className="mx-1 hidden h-6 w-px bg-border md:block" />
 
@@ -102,13 +97,10 @@ export function TopStrip({ repositories, selected, githubLogin }: { repositories
         </div>
       </header>
 
-      {/* Mobile nav drawer — sticks below the header */}
+      {/* Mobile nav drawer */}
       {mobileNavOpen && (
         <div className="border-b border-border bg-card/95 backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-[1400px] flex-col gap-1 p-3">
-            <div className="mb-1 border-b border-border/50 pb-2">
-              <RepositorySelector repositories={repositories} selected={selected} />
-            </div>
             {ROUTES.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}

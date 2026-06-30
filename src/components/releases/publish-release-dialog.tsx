@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { listBranchesAction, generateReleaseNotesAction, publishReleaseAction } from "@/app/(app)/releases/actions";
+import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 
 type BumpType = "minor" | "patch";
 type Step = "form" | "confirm" | "publishing" | "done";
@@ -120,9 +121,8 @@ export function PublishReleaseDialog({
               <div className="relative min-h-0 flex-1 flex flex-col">
                 {/* Overlay sits here — outside overflow-y-auto so inset-0 covers the visible box */}
                 {notesLoading && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2.5 bg-background/80 backdrop-blur-sm">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-instrument border-t-transparent" />
-                    <p className="text-xs text-muted-foreground">Updating notes…</p>
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+                    <KineticTextLoader className="scale-[0.35] overflow-hidden" />
                   </div>
                 )}
 
@@ -257,9 +257,8 @@ export function PublishReleaseDialog({
 
           {/* ── Publishing step ── */}
           {step === "publishing" && (
-            <div className="flex flex-col items-center justify-center gap-3 px-5 py-16">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-instrument border-t-transparent" />
-              <p className="text-sm text-muted-foreground">Publishing {computedTag}…</p>
+            <div className="flex flex-col items-center justify-center px-5 py-16">
+              <KineticTextLoader className="scale-[0.45] overflow-hidden" />
             </div>
           )}
 
