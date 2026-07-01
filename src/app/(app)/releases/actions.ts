@@ -2,7 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { getDataService } from "@/lib/data/get-data-service";
+import type { DataService } from "@/lib/data/data-service";
 import type { PublishReleaseResult } from "@/lib/data/types";
+
+async function describeSyncFailure(data: DataService, slug: string, number: number): Promise<string | null> {
+  try {
+    const pr = await data.getPullRequest(slug, number);
+    if (pr.checksStatus === "failure") return `Sync failed — checks failing on development: ${pr.failingChecks.join(", ")}`;
+    if (!pr.mergeable) return "Sync failed — development has merge conflicts with main. Resolve them, then try again.";
+    if (pr.checksStatus === "pending") return "Sync failed — checks are still running on development. Try again once they finish.";
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export async function listBranchesAction(slug: string): Promise<string[]> {
   try {
@@ -26,21 +39,29 @@ export async function generateReleaseNotesAction(
 export async function syncMainAction(
   slug: string,
 ): Promise<{ ok: boolean; alreadySynced?: boolean; error?: string }> {
+  const data = await getDataService();
+  let pr: { number: number; htmlUrl: string };
   try {
-    const data = await getDataService();
-    const pr = await data.createPullRequest(
+    pr = await data.createPullRequest(
       slug,
-      "chore: sync development → main",
+      "Sync Development to Main",
       "development",
       "main",
       "📦 Sync Development to Main\n\nThis PR merges the development branch into main before the release.",
     );
-    await data.mergePullRequest(slug, pr.number);
-    return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";
     if (/no commits|already|up.to.date/i.test(msg)) return { ok: true, alreadySynced: true };
     return { ok: false, error: msg };
+  }
+
+  try {
+    await data.mergePullRequest(slug, pr.number);
+    return { ok: true };
+  } catch (e) {
+    const reason = await describeSyncFailure(data, slug, pr.number);
+    const msg = e instanceof Error ? e.message : "Sync failed";
+    return { ok: false, error: reason ?? msg };
   }
 }
 

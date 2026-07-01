@@ -1,7 +1,6 @@
 import { fetchClickUpPage } from "@/lib/clickup/client";
 import { getDataService } from "@/lib/data/get-data-service";
-import type { PullRequest } from "@/lib/data/types";
-import { ClickUpPrList } from "@/components/clickup/clickup-pr-list";
+import { ClickUpPrList, type ClickUpPrEntry } from "@/components/clickup/clickup-pr-list";
 import { ErrorState } from "@/components/states/error-state";
 
 export default async function ClickUpPullRequestsPage({
@@ -11,7 +10,7 @@ export default async function ClickUpPullRequestsPage({
 }) {
   const { cursor, history } = await searchParams;
 
-  let pullRequests: PullRequest[] = [];
+  let items: ClickUpPrEntry[] = [];
   let nextCursor: string | null = null;
   let hasMore = false;
   let errorMsg: string | null = null;
@@ -26,14 +25,16 @@ export default async function ClickUpPullRequestsPage({
     hasMore = clickupPage.hasMore;
 
     const results = await Promise.allSettled(
-      clickupPage.items.map((item) =>
-        data.getPullRequest(`${item.owner}/${item.repo}`, item.prNumber)
-      )
+      clickupPage.items.map(async (item) => ({
+        pr: await data.getPullRequest(`${item.owner}/${item.repo}`, item.prNumber),
+        clickupAuthor: item.author,
+        messageId: item.messageId,
+      }))
     );
 
-    pullRequests = results
+    items = results
       .map((r) => (r.status === "fulfilled" ? r.value : null))
-      .filter((pr): pr is PullRequest => pr !== null);
+      .filter((entry): entry is ClickUpPrEntry => entry !== null);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     errorMsg = msg.includes("Missing")
@@ -49,7 +50,7 @@ export default async function ClickUpPullRequestsPage({
 
   return (
     <ClickUpPrList
-      pullRequests={pullRequests}
+      items={items}
       nextCursor={nextCursor}
       hasMore={hasMore}
       cursorHistory={cursorHistory}

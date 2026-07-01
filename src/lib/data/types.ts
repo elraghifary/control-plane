@@ -34,6 +34,8 @@ export interface PullRequestLabel {
   color: string;
 }
 
+export type PullRequestChecksStatus = "pending" | "success" | "failure" | "none";
+
 export interface PullRequest {
   id: number;
   number: number;
@@ -53,6 +55,8 @@ export interface PullRequest {
   reviewStatus: PullRequestReviewState;
   body: string;
   htmlUrl: string;
+  checksStatus: PullRequestChecksStatus;
+  failingChecks: string[];
 }
 
 export interface StagingSyncResult {

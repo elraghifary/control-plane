@@ -1,4 +1,4 @@
-import type { PullRequestReviewState, PullRequestStatus } from "@/lib/data/types";
+import type { PullRequest, PullRequestChecksStatus, PullRequestReviewState, PullRequestStatus } from "@/lib/data/types";
 
 export function formatPrDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
@@ -38,4 +38,21 @@ export function fileChangeStatusBadgeVariant(status: string): StatusBadgeVariant
   if (status === "removed") return "error";
   if (status === "modified") return "instrument";
   return "secondary";
+}
+
+export function checksStatusLabel(status: PullRequestChecksStatus) {
+  return { pending: "Checks running", success: "Checks passed", failure: "Checks failed", none: "" }[status];
+}
+
+export function checksStatusBadgeVariant(status: PullRequestChecksStatus): StatusBadgeVariant {
+  if (status === "success") return "healthy";
+  if (status === "failure") return "error";
+  return "warn";
+}
+
+export function mergeBlockedReason(pr: PullRequest): string | undefined {
+  if (!pr.mergeable) return "Cannot merge — resolve conflicts";
+  if (pr.checksStatus === "failure") return `Checks failed: ${pr.failingChecks.join(", ")}`;
+  if (pr.checksStatus === "pending") return "Waiting for checks to finish";
+  return undefined;
 }

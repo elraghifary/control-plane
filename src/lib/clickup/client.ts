@@ -77,3 +77,24 @@ export async function fetchClickUpPage(cursor?: string): Promise<ClickUpPage> {
 
   return { items, nextCursor, hasMore };
 }
+
+export async function sendReplyMessage(messageId: string, content: string): Promise<void> {
+  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
+  const token = process.env.CLICKUP_PERSONAL_TOKEN;
+  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
+
+  if (!token || !workspaceId) {
+    throw new Error("Missing CLICKUP_PERSONAL_TOKEN or CLICKUP_WORKSPACE_ID");
+  }
+
+  const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/chat/messages/${messageId}/replies`, {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "message", content, content_format: "text/md" }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+}

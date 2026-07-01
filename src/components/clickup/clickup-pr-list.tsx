@@ -7,14 +7,20 @@ import { Button } from "@/components/ui/button";
 import { PrCard } from "@/components/pull-requests/pr-card";
 import { useNavigationLoading } from "@/components/navigation-loading";
 
+export interface ClickUpPrEntry {
+  pr: PullRequest;
+  clickupAuthor: string;
+  messageId: string;
+}
+
 export function ClickUpPrList({
-  pullRequests,
+  items,
   nextCursor,
   hasMore,
   cursorHistory,
   currentCursor,
 }: {
-  pullRequests: PullRequest[];
+  items: ClickUpPrEntry[];
   nextCursor: string | null;
   hasMore: boolean;
   cursorHistory: string[];
@@ -47,15 +53,24 @@ export function ClickUpPrList({
 
   return (
     <div className="space-y-4">
-      {pullRequests.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
           No GitHub pull request links found in this batch of messages.
         </p>
       ) : (
         <div className="space-y-4">
-          {pullRequests.map((pr) => {
+          {items.map(({ pr, clickupAuthor, messageId }) => {
             const state = pr.status === "closed" || pr.status === "merged" ? "closed" : "open";
-            return <PrCard key={`${pr.slug}-${pr.number}`} pr={pr} state={state} showRepo />;
+            return (
+              <PrCard
+                key={`${pr.slug}-${pr.number}`}
+                pr={pr}
+                state={state}
+                showRepo
+                clickupUser={clickupAuthor}
+                clickupMessageId={messageId}
+              />
+            );
           })}
         </div>
       )}

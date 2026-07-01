@@ -1,23 +1,27 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
 import { GitPullRequest, GitPullRequestClosed, GitMerge, GitCommit, FileDiff, User, Calendar } from "lucide-react";
 import type { PullRequest, PullRequestListState } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigationLoading } from "@/components/navigation-loading";
-import { formatPrDate, prStatusBadgeVariant, prStatusLabel, reviewStatusBadgeVariant, reviewStatusLabel } from "./pr-utils";
+import { formatPrDate, prStatusBadgeVariant, prStatusLabel, reviewStatusBadgeVariant, reviewStatusLabel, checksStatusBadgeVariant, checksStatusLabel, mergeBlockedReason } from "./pr-utils";
 import { LabelBadge, isPullRequestActionable } from "./pr-meta";
 import { ReviewDialog } from "./review-dialog";
 import { mergePullRequest, closePullRequest, reopenPullRequest } from "@/app/(app)/pull-requests/actions";
+import { notifyBlockedPrAction } from "@/app/(app)/clickup/pull-requests/actions";
 
-export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRequestListState; showRepo?: boolean }) {
+export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId }: { pr: PullRequest; state: PullRequestListState; showRepo?: boolean; clickupUser?: string; clickupMessageId?: string }) {
   const { runThenRefresh } = useNavigationLoading();
   const [reviewOpen, setReviewOpen] = React.useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = React.useState(false);
   const [reopenDialogOpen, setReopenDialogOpen] = React.useState(false);
+  const [notifying, setNotifying] = React.useState(false);
   const actionable = isPullRequestActionable(pr) && state !== "closed";
+  const blockReason = mergeBlockedReason(pr);
 
   async function merge() {
     await runThenRefresh(async () => {
@@ -42,14 +46,34 @@ export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRe
     });
   }
 
+  async function notify() {
+    if (!clickupMessageId || !blockReason) return;
+    setNotifying(true);
+    const content = blockReason;
+    const res = await notifyBlockedPrAction(clickupMessageId, content);
+    setNotifying(false);
+    if (!res.ok) {
+      toast.error(res.error ?? "Could not send notification");
+      return;
+    }
+    toast.success("Notified in ClickUp");
+  }
+
   return (
     <>
       <article className="rounded-xl border border-border/70 bg-card/50 p-4 backdrop-blur transition-colors hover:border-instrument/30">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 flex-1 space-y-2.5">
             {showRepo && (
-              <div>
-                <Badge variant="secondary" size="sm" className="font-mono">{pr.slug}</Badge>
+              <div className="space-y-1">
+                {clickupUser && (
+                  <div>
+                    <Badge variant="instrument" size="sm">{clickupUser}</Badge>
+                  </div>
+                )}
+                <div>
+                  <Badge variant="secondary" size="sm">{pr.slug}</Badge>
+                </div>
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2">
@@ -72,14 +96,14 @@ export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRe
             </div>
             <div className="text-xs">
               <div className="flex flex-col items-start gap-1 sm:hidden">
-                <Badge variant="secondary" shape="tag" className="break-all">{pr.sourceBranch}</Badge>
+                <Badge variant="secondary" className="break-all">{pr.sourceBranch}</Badge>
                 <span className="text-muted-foreground">↓</span>
-                <Badge variant="secondary" shape="tag" className="break-all">{pr.destinationBranch}</Badge>
+                <Badge variant="secondary" className="break-all">{pr.destinationBranch}</Badge>
               </div>
               <div className="hidden items-center gap-2 sm:flex sm:flex-wrap">
-                <Badge variant="secondary" shape="tag">{pr.sourceBranch}</Badge>
+                <Badge variant="secondary">{pr.sourceBranch}</Badge>
                 <span className="text-muted-foreground">→</span>
-                <Badge variant="secondary" shape="tag">{pr.destinationBranch}</Badge>
+                <Badge variant="secondary">{pr.destinationBranch}</Badge>
               </div>
             </div>
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -101,16 +125,41 @@ export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRe
                   )}
                 </Badge>
               )}
+              {pr.checksStatus !== "none" && (
+                <Badge variant={checksStatusBadgeVariant(pr.checksStatus)}>{checksStatusLabel(pr.checksStatus)}</Badge>
+              )}
               {pr.labels.map((l) => <LabelBadge key={l.name} {...l} />)}
             </div>
+            {actionable && blockReason && (
+              <p className="text-xs text-status-error">{blockReason}</p>
+            )}
           </div>
           <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-stretch">
             <Button variant="outline" size="sm" className="hover:border-status-healthy/40 hover:text-status-healthy" onClick={() => setReviewOpen(true)}>
               {state === "closed" ? "Reviewed" : "Review"}
             </Button>
             {actionable && (
-              <Button size="sm" variant="outline" className="hover:border-instrument/40 hover:text-instrument" disabled={!pr.mergeable} onClick={merge}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="hover:border-instrument/40 hover:text-instrument"
+                disabled={!!blockReason}
+                title={blockReason}
+                onClick={merge}
+              >
                 Merge
+              </Button>
+            )}
+            {showRepo && clickupMessageId && actionable && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="hover:border-status-warn/40 hover:text-status-warn"
+                disabled={!blockReason || notifying}
+                title={blockReason ? undefined : "No blocking issues to notify about"}
+                onClick={notify}
+              >
+                {notifying ? "Notifying…" : "Notify"}
               </Button>
             )}
             {state === "open" && (

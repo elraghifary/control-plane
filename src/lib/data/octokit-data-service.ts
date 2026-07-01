@@ -4,7 +4,7 @@ import type {
   Repository, DashboardSummary, EnvironmentStatus,
   MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint,
   PullRequest, PullRequestReviewState, PullRequestReviewer, PullRequestStatus, StagingSyncResult, StagingCreateResult, StagingPrepareResult,
-  PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult,
+  PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, PullRequestChecksStatus,
 } from "./types";
 
 function parseSlug(slug: string): { owner: string; repo: string } {
@@ -33,6 +33,18 @@ function prStatus(draft: boolean, merged: boolean, state: string): PullRequestSt
   if (draft) return "draft";
   if (state === "closed") return "closed";
   return "open";
+}
+
+const PASSING_CONCLUSIONS = new Set(["success", "neutral", "skipped"]);
+
+function summarizeChecks(
+  checkRuns: { name: string; status: string; conclusion: string | null }[]
+): { status: PullRequestChecksStatus; failingChecks: string[] } {
+  if (checkRuns.length === 0) return { status: "none", failingChecks: [] };
+  const failing = checkRuns.filter((c) => c.status === "completed" && !PASSING_CONCLUSIONS.has(c.conclusion ?? ""));
+  if (failing.length > 0) return { status: "failure", failingChecks: [...new Set(failing.map((c) => c.name))] };
+  if (checkRuns.some((c) => c.status !== "completed")) return { status: "pending", failingChecks: [] };
+  return { status: "success", failingChecks: [] };
 }
 
 export class OctokitDataService implements DataService {
@@ -206,6 +218,13 @@ export class OctokitDataService implements DataService {
         : this.octokit.rest.pulls.listReviews({ owner, repo, pull_number: number }).catch(() => ({ data: [] })),
     ]);
     const pr = detail.data;
+    const checkRuns = pr.state === "open"
+      ? await this.octokit.rest.checks
+          .listForRef({ owner, repo, ref: pr.head.sha, per_page: 100 })
+          .then((r) => r.data.check_runs)
+          .catch(() => [])
+      : [];
+    const { status: checksStatus, failingChecks } = summarizeChecks(checkRuns);
     const reviewerMap = new Map<string, PullRequestReviewer>();
     for (const u of pr.requested_reviewers ?? []) {
       if (u.login) reviewerMap.set(u.login, { login: u.login, avatarUrl: u.avatar_url ?? undefined, state: "pending" });
@@ -241,6 +260,8 @@ export class OctokitDataService implements DataService {
       reviewStatus: aggregateReviewStatus(reviewers, draft),
       body: pr.body ?? "",
       htmlUrl: pr.html_url,
+      checksStatus,
+      failingChecks,
     };
   }
 
@@ -308,6 +329,8 @@ export class OctokitDataService implements DataService {
                 reviewStatus: aggregateReviewStatus(reviewers, draft),
                 body: p.body ?? "",
                 htmlUrl: p.html_url,
+                checksStatus: "none" as const,
+                failingChecks: [],
               };
             })
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

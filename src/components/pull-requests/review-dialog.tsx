@@ -15,6 +15,7 @@ import {
 import { MarkdownView } from "./markdown-view";
 import { PrFilesViewer } from "./pr-files-viewer";
 import { submitReviewAndMerge } from "@/app/(app)/pull-requests/actions";
+import { mergeBlockedReason } from "./pr-utils";
 
 function parseLinkedPrs(body: string): Array<{ slug: string; number: number }> {
   const re = /https:\/\/github\.com\/([\w.-]+\/[\w.-]+)\/pull\/(\d+)/g;
@@ -62,6 +63,8 @@ export function ReviewDialog({
     });
   }
 
+  const blockReason = pr ? mergeBlockedReason(pr) : undefined;
+
   const linkedPrs = React.useMemo(
     () => parseLinkedPrs(pr?.body ?? "").filter((p) => p.slug !== pr?.slug),
     [pr?.body, pr?.slug],
@@ -107,16 +110,18 @@ export function ReviewDialog({
             </Button>
           ) : (
             <>
+              {blockReason && <p className="mr-auto self-center text-xs text-status-error">{blockReason}</p>}
               <Button variant="outline" size="sm" className="" onClick={onClose}>
                 Cancel
               </Button>
               <Button
                 size="sm"
                 className=""
-                disabled={!pr.mergeable}
+                disabled={!!blockReason}
+                title={blockReason}
                 onClick={approveAndMerge}
               >
-                Approve &amp; merge
+                Approve &amp; Merge
               </Button>
             </>
           )}

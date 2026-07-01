@@ -14,13 +14,15 @@ const BASE: Omit<PullRequest, "number" | "slug" | "title" | "sourceBranch" | "de
   reviewStatus: "pending",
   body: "Implements the new dashboard widgets.",
   htmlUrl: "#",
+  checksStatus: "success",
+  failingChecks: [],
 };
 
 export function pullRequestsFor(targetBranch: string): PullRequest[] {
   if (targetBranch === "development") {
     return [
       { ...BASE, id: 101, number: 42, slug: "happykids-id/dashboard", title: "feat: add mission control metrics", sourceBranch: "feature/metrics", destinationBranch: "development", reviewStatus: "approved", reviewers: [{ login: "alice", state: "approved" }], labels: [{ name: "feature", color: "0e8a16" }] },
-      { ...BASE, id: 102, number: 18, slug: "happykids-id/payment", title: "fix: webhook retry logic", sourceBranch: "fix/webhook-retry", destinationBranch: "development", reviewStatus: "changes_requested", reviewers: [{ login: "bob", state: "changes_requested" }], commitCount: 2, filesChanged: 5 },
+      { ...BASE, id: 102, number: 18, slug: "happykids-id/payment", title: "fix: webhook retry logic", sourceBranch: "fix/webhook-retry", destinationBranch: "development", reviewStatus: "changes_requested", reviewers: [{ login: "bob", state: "changes_requested" }], commitCount: 2, filesChanged: 5, checksStatus: "failure", failingChecks: ["lint", "test"] },
       { ...BASE, id: 103, number: 9, slug: "happykids-id/dashboard", title: "chore: cleanup deps", sourceBranch: "chore/deps", destinationBranch: "development", status: "merged", mergeable: false, reviewStatus: "approved", reviewers: [] },
     ];
   }
