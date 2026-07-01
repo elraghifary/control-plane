@@ -89,7 +89,7 @@ export function RepositorySelector({ repositories, selected, className }: { repo
                       onSelect={() => choose(repository.slug)}
                       className="font-mono text-xs"
                     >
-                      <Check className={cn("mr-2 size-4", repository.slug === selected ? "opacity-100" : "opacity-0")} />
+                      <Check className={cn("size-4", repository.slug === selected ? "opacity-100" : "opacity-0")} />
                       {repository.slug}
                     </CommandItem>
                   ))}
