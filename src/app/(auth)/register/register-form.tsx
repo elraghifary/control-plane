@@ -38,7 +38,7 @@ export function RegisterForm() {
       <h1 className="text-base font-medium">Create your account</h1>
       <Input name="username" placeholder="Username" autoComplete="username" required />
       <Input name="password" type="password" placeholder="Password (min 8 chars)" autoComplete="new-password" required />
-      <Input name="pat" type="password" placeholder="GitHub Personal Access Token" required className="font-mono text-xs" />
+      <Input name="pat" type="password" placeholder="GitHub Personal Access Token" required />
       <p className="text-[11px] text-muted-foreground">The token is encrypted at rest and used only on the server.</p>
       {error && <p className="text-[12px] text-status-error">{error}</p>}
       <button type="submit"

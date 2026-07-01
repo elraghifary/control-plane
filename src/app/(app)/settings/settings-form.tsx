@@ -82,7 +82,7 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
         <p className="mb-3 font-mono text-xs text-muted-foreground">Connected as {githubLogin}</p>
       )}
       <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
-        <Input name="pat" type="password" placeholder="ghp_… or github_pat_…" autoComplete="off" required className="font-mono text-xs" />
+        <Input name="pat" type="password" placeholder="ghp_… or github_pat_…" autoComplete="off" required />
         <p className="text-[11px] text-muted-foreground">
           Needs <code className="font-mono">repo</code> and <code className="font-mono">read:org</code> scopes.
         </p>
