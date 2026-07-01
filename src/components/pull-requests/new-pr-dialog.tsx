@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { MarkdownView } from "./markdown-view";
 import { listBranchesAction, compareBranchesAction, createPullRequestAction } from "@/app/(app)/pull-requests/actions";
 import type { PullRequestFileChange } from "@/lib/data/types";
@@ -330,11 +332,11 @@ export function NewPrDialog({ slug }: { slug: string }) {
 
                   <div>
                     <label className={fieldLabelCls}>Title *</label>
-                    <input
+                    <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Title"
-                      className="w-full rounded-lg border border-border bg-card/40 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-instrument/60"
+                      className="bg-card/40"
                     />
                   </div>
 
@@ -365,12 +367,12 @@ export function NewPrDialog({ slug }: { slug: string }) {
                         )}
                       </div>
                     ) : (
-                      <textarea
+                      <Textarea
                         value={body}
                         onChange={(e) => setBody(e.target.value)}
                         placeholder="Add your description here…"
                         rows={6}
-                        className="w-full resize-none rounded-lg border border-border bg-card/40 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-instrument/60"
+                        className="bg-card/40"
                       />
                     )}
                   </div>

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { changePassword, changeGithubPat } from "./actions";
 
 function SettingsSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
@@ -39,31 +40,10 @@ export function ChangePasswordForm() {
 
   return (
     <SettingsSection title="Change Password" description="Update your login password.">
-      <form ref={formRef} onSubmit={onSubmit} className="space-y-3">
-        <input
-          name="currentPassword"
-          type="password"
-          placeholder="Current password"
-          autoComplete="current-password"
-          required
-          className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-instrument/60"
-        />
-        <input
-          name="newPassword"
-          type="password"
-          placeholder="New password (min 8 chars)"
-          autoComplete="new-password"
-          required
-          className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-instrument/60"
-        />
-        <input
-          name="confirmPassword"
-          type="password"
-          placeholder="Confirm new password"
-          autoComplete="new-password"
-          required
-          className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-instrument/60"
-        />
+      <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
+        <Input name="currentPassword" type="password" placeholder="Current password" autoComplete="current-password" required />
+        <Input name="newPassword" type="password" placeholder="New password (min 8 chars)" autoComplete="new-password" required />
+        <Input name="confirmPassword" type="password" placeholder="Confirm new password" autoComplete="new-password" required />
         <StatusMessage result={result} />
         <Button
           type="submit"
@@ -101,15 +81,8 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
       {githubLogin && (
         <p className="mb-3 font-mono text-xs text-muted-foreground">Connected as {githubLogin}</p>
       )}
-      <form ref={formRef} onSubmit={onSubmit} className="space-y-3">
-        <input
-          name="pat"
-          type="password"
-          placeholder="ghp_… or github_pat_…"
-          autoComplete="off"
-          required
-          className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 font-mono text-xs outline-none focus:border-instrument/60"
-        />
+      <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
+        <Input name="pat" type="password" placeholder="ghp_… or github_pat_…" autoComplete="off" required className="font-mono text-xs" />
         <p className="text-[11px] text-muted-foreground">
           Needs <code className="font-mono">repo</code> and <code className="font-mono">read:org</code> scopes.
         </p>

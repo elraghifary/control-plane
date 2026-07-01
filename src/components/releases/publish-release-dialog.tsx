@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { listBranchesAction, generateReleaseNotesAction, publishReleaseAction, syncMainAction } from "@/app/(app)/releases/actions";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
+import { Textarea } from "@/components/ui/textarea";
 
 type BumpType = "minor" | "patch";
 type Step = "form" | "confirm" | "syncing" | "publishing" | "done";
@@ -234,11 +235,11 @@ export function PublishReleaseDialog({
                 {/* Release notes */}
                 <div>
                   <label className={fieldLabelCls}>Release notes</label>
-                  <textarea
+                  <Textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={8}
-                    className="w-full resize-none rounded-lg border border-border bg-card/50 px-3 py-2 font-mono text-xs outline-none focus:border-instrument/60"
+                    className="bg-card/50 font-mono text-xs"
                     placeholder="Release notes will be auto-generated…"
                   />
                 </div>
@@ -265,7 +266,7 @@ export function PublishReleaseDialog({
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
                 <DialogTitle className="text-base">Confirm Release</DialogTitle>
               </DialogHeader>
-              <div className="flex-1 px-5 py-5 space-y-3 text-sm text-muted-foreground">
+              <div className="flex-1 px-5 py-5 space-y-4 text-sm text-muted-foreground">
                 {syncMain && (
                   <p>
                     Merge <code className="font-mono text-foreground">development → main</code>, then publish{" "}
