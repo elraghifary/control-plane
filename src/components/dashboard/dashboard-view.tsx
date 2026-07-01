@@ -1,10 +1,11 @@
 "use client";
 import { GitPullRequest, Tag, Rocket } from "lucide-react";
-import type { DashboardSummary, EnvironmentStatus, MergeActivityPoint } from "@/lib/data";
+import type { Repository, DashboardSummary, EnvironmentStatus, MergeActivityPoint } from "@/lib/data";
 import { MetricCard } from "./metric-card";
 import { StatusWidget } from "./status-widget";
 import { MergeActivityChart } from "./charts/merge-activity-chart";
 import { FadeInUp } from "@/components/motion/fade-in";
+import { RepositorySelector } from "@/components/shell/repository-selector";
 
 function formatReleaseDate(iso: string) {
   const d = new Date(iso);
@@ -12,15 +13,20 @@ function formatReleaseDate(iso: string) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-export function DashboardView({ summary, envs, merge }: {
+export function DashboardView({ summary, envs, merge, repositories, selectedSlug }: {
   summary: DashboardSummary; envs: EnvironmentStatus[]; merge: MergeActivityPoint[];
+  repositories: Repository[]; selectedSlug: string;
 }) {
   return (
-    <div className="space-y-3">
+    <div>
       <div>
         <h1 className="text-lg font-medium">Mission Control</h1>
+        <div className="mt-2">
+          <RepositorySelector repositories={repositories} selected={selectedSlug} />
+        </div>
       </div>
 
+      <div className="mt-5 space-y-3">
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <MetricCard label="Active PRs" value={summary.activePullRequests} icon={GitPullRequest} />
         <MetricCard label="Total Releases" value={summary.totalReleases} icon={Tag} />
@@ -43,6 +49,7 @@ export function DashboardView({ summary, envs, merge }: {
 
       <div className="grid gap-3 md:grid-cols-3">
         {envs.map((e) => <StatusWidget key={e.env} status={e} />)}
+      </div>
       </div>
     </div>
   );
