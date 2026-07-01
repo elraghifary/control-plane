@@ -5,25 +5,26 @@ import { signIn } from "next-auth/react";
 import { useNavigationLoading } from "@/components/navigation-loading";
 
 export function LoginForm() {
-  const { navigate, withLoading } = useNavigationLoading();
+  const { navigate } = useNavigationLoading();
   const [error, setError] = React.useState<string | null>(null);
+  const [pending, setPending] = React.useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setPending(true);
     const fd = new FormData(e.currentTarget);
-    await withLoading(async () => {
-      const res = await signIn("credentials", {
-        username: String(fd.get("username")),
-        password: String(fd.get("password")),
-        redirect: false,
-      });
-      if (res?.error) {
-        setError("Invalid username or password.");
-        return;
-      }
-      navigate("/dashboard");
+    const res = await signIn("credentials", {
+      username: String(fd.get("username")),
+      password: String(fd.get("password")),
+      redirect: false,
     });
+    if (res?.error) {
+      setError("Invalid username or password.");
+      setPending(false);
+      return;
+    }
+    navigate("/dashboard");
   }
 
   return (
@@ -34,9 +35,9 @@ export function LoginForm() {
       <input name="password" type="password" placeholder="Password" autoComplete="current-password" required
         className="w-full rounded-lg border border-border bg-background/60 px-3 py-2 text-sm outline-none focus:border-instrument/60" />
       {error && <p className="text-[12px] text-status-error">{error}</p>}
-      <button type="submit"
+      <button type="submit" disabled={pending}
         className="w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
-        Sign in
+        {pending ? "Signing in…" : "Sign in"}
       </button>
       <p className="text-center text-[12px] text-muted-foreground">
         No account? <Link href="/register" className="text-instrument hover:underline">Create one</Link>
