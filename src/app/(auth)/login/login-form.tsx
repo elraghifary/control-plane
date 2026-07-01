@@ -1,6 +1,5 @@
 "use client";
 import * as React from "react";
-import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useNavigationLoading } from "@/components/navigation-loading";
 import { Input } from "@/components/ui/input";
@@ -16,12 +15,12 @@ export function LoginForm() {
     setPending(true);
     const fd = new FormData(e.currentTarget);
     const res = await signIn("credentials", {
-      username: String(fd.get("username")),
+      email: String(fd.get("email")),
       password: String(fd.get("password")),
       redirect: false,
     });
     if (res?.error) {
-      setError("Invalid username or password.");
+      setError("Invalid email or password.");
       setPending(false);
       return;
     }
@@ -31,7 +30,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <h1 className="text-base font-medium">Sign in</h1>
-      <Input name="username" placeholder="Username" autoComplete="username" required />
+      <Input name="email" type="email" placeholder="Email" autoComplete="email" required />
       <Input name="password" type="password" placeholder="Password" autoComplete="current-password" required />
       {error && <p className="text-[12px] text-status-error">{error}</p>}
       <button type="submit" disabled={pending}
@@ -39,7 +38,7 @@ export function LoginForm() {
         {pending ? "Signing in…" : "Sign in"}
       </button>
       <p className="text-center text-[12px] text-muted-foreground">
-        No account? <Link href="/register" className="text-instrument hover:underline">Create one</Link>
+        Need access? Ask an admin to invite you.
       </p>
     </form>
   );

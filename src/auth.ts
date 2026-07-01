@@ -8,14 +8,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
   providers: [
     Credentials({
-      credentials: { username: {}, password: {} },
+      credentials: { email: {}, password: {} },
       authorize: async (creds) => {
-        const username = String(creds?.username ?? "").toLowerCase();
+        const email = String(creds?.email ?? "").toLowerCase();
         const password = String(creds?.password ?? "");
-        if (!username || !password) return null;
-        const user = await store.getUserByUsername(username);
+        if (!email || !password) return null;
+        const user = await store.getUserByEmail(email);
         if (!user || !verifyPassword(password, user.passwordHash)) return null;
-        return { id: user.id, name: user.githubLogin, image: user.avatarUrl ?? null };
+        return { id: user.id, name: user.githubLogin, image: user.avatarUrl ?? null, isAdmin: user.isAdmin };
       },
     }),
   ],
@@ -25,6 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userId = user.id;
         token.githubLogin = user.name ?? undefined;
         token.avatarUrl = user.image ?? undefined;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
@@ -33,6 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.userId;
         session.user.githubLogin = token.githubLogin;
         session.user.avatarUrl = token.avatarUrl;
+        session.user.isAdmin = token.isAdmin ?? false;
       }
       return session;
     },

@@ -22,13 +22,14 @@ npx tsc --noEmit      # Type-check; must be clean — this is the primary verifi
 
 ## Architecture
 
-Control Plane is a premium DevOps mission-control dashboard for driving GitHub deployments across `development → staging → main`, themed as an aircraft control tower. **Current state: Phase 2 complete.** All core pages are live with real GitHub data: dashboard, pull requests (list/review/merge/sync), releases (list/publish), and settings. Read `docs/superpowers/specs/2026-06-26-control-plane-auth-octokit-design.md` for the auth+data spec and `docs/superpowers/specs/2026-06-25-control-plane-design.md` for the full phased roadmap.
+Control Plane is a premium DevOps mission-control dashboard for driving GitHub deployments across `development → staging → main`, themed as an aircraft control tower. All core pages are live with real GitHub data: dashboard, pull requests (list/review/merge/sync), releases (list/publish, with optional development → main sync), and settings (password/PAT management plus admin-only user invites). Accounts are invite-only, backed by Supabase Postgres — see the Auth & persistence section below.
 
 ### Auth & persistence (`src/auth.ts`, `src/lib/store/`, `src/lib/auth/`)
 
-- **Auth.js v5** Credentials provider + JWT session. Route handler at `src/app/api/auth/[...nextauth]/route.ts`.
-- **`(auth)` route group** — `/login`, `/register` (minimal shell, no dock). Registration validates a GitHub PAT via Octokit `GET /user`, then stores it **AES-256-GCM encrypted** in `.data/users.json` (gitignored).
-- **`Store` interface** + `JsonFileStore` in `src/lib/store/` — user accounts only; not to be confused with client-side Zustand (removed).
+- **Auth.js v5** Credentials provider (email + password) + JWT session, carrying `isAdmin`. Route handler at `src/app/api/auth/[...nextauth]/route.ts`.
+- **`(auth)` route group** — `/login` and `/invite/[token]` (minimal shell, no dock). There is no self-serve registration — accounts are created only by accepting an admin-issued invite, which validates a GitHub PAT via Octokit `GET /user` and stores it **AES-256-GCM encrypted**.
+- **`Store` interface** in `src/lib/store/`, implemented by `SupabaseStore` (Postgres via `@supabase/supabase-js`, service-role key). Covers users (`email`, `isAdmin`, `passwordHash`, `patEncrypted`, `githubLogin` — GitHub login from PAT validation is the display handle, there's no separate username) and `invites` (hashed token, 7-day expiry, one-time use). Schema lives in `supabase/migrations/`; apply with `yarn db:migrate <file>` (uses `pg` against `POSTGRES_URL_NON_POOLING` — no Supabase CLI project link required, though the CLI is available).
+- **Admin-only user management**: Settings → Users (visible when `session.user.isAdmin`) lists accounts and can invite, promote/demote admin, and remove users. All three actions are re-checked server-side in `(app)/settings/actions.ts`, not just gated in the UI. An admin can't demote/remove themselves or demote the last remaining admin.
 - **`(app)/layout.tsx`** calls `auth()` and redirects unauthenticated requests to `/login`. PAT never reaches the client.
 
 ### Swap-friendly data layer (`src/lib/data/`)
@@ -78,7 +79,7 @@ Pages fetch in **Server Components** and pass plain data down to Client Componen
 
 ## Working in this repo
 
-- Work is spec-driven and phased: a spec → plan → implementation cycle lives in `docs/superpowers/`. Stay within the current phase's scope; don't build ahead speculatively.
+- Stay within the current request's scope; don't build ahead speculatively.
 - Branch: feature work happens off `main`. Commit after each logical task.
 
 ### Dialog conventions
