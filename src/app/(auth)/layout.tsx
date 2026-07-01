@@ -15,7 +15,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <ControlPlaneMark />
           <div className="leading-tight">
             <div className="text-sm font-medium">Control Plane</div>
-            <div className="font-mono text-[10px] tracking-widest text-muted-foreground">OPS TOWER</div>
           </div>
         </div>
         {children}

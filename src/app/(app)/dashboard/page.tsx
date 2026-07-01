@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDataService } from "@/lib/data/get-data-service";
-import type { DashboardSummary, EnvironmentStatus, MergeActivityPoint } from "@/lib/data/types";
+import type { Repository, DashboardSummary, EnvironmentStatus, MergeActivityPoint } from "@/lib/data/types";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { EmptyState } from "@/components/states/empty-state";
 import { ErrorState } from "@/components/states/error-state";
@@ -11,19 +11,21 @@ export default async function DashboardPage() {
 
   let empty = false;
   let errorStatus: number | undefined;
+  let repositories: Repository[] = [];
+  let selectedSlug = "";
   let summary: DashboardSummary | undefined;
   let envs: EnvironmentStatus[] | undefined;
   let merge: MergeActivityPoint[] | undefined;
 
   try {
-    const repositories = await data.listRepositories();
+    repositories = await data.listRepositories();
     const cookieSlug = (await cookies()).get("cp-repository")?.value;
-    const slug = repositories.find((r) => r.slug === cookieSlug)?.slug ?? repositories[0]?.slug;
-    if (slug) {
+    selectedSlug = repositories.find((r) => r.slug === cookieSlug)?.slug ?? repositories[0]?.slug ?? "";
+    if (selectedSlug) {
       [summary, envs, merge] = await Promise.all([
-        data.getDashboardSummary(slug),
-        data.getEnvironmentStatuses(slug),
-        data.getMergeActivity(slug),
+        data.getDashboardSummary(selectedSlug),
+        data.getEnvironmentStatuses(selectedSlug),
+        data.getMergeActivity(selectedSlug),
       ]);
     } else {
       empty = true;
@@ -47,5 +49,5 @@ export default async function DashboardPage() {
         description={errorStatus === 403 ? "GitHub rate limit hit — try again shortly." : "The GitHub API request failed. Check your token in settings."}
       />
     );
-  return <DashboardView summary={summary} envs={envs} merge={merge} />;
+  return <DashboardView summary={summary} envs={envs} merge={merge} repositories={repositories} selectedSlug={selectedSlug} />;
 }
