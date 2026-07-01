@@ -155,7 +155,7 @@ export function SyncStagingDialog({
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
                 <DialogTitle className="text-base">Confirm Sync</DialogTitle>
               </DialogHeader>
-              <div className="flex-1 px-5 py-5 text-sm text-muted-foreground space-y-3">
+              <div className="flex-1 px-5 py-5 text-sm text-muted-foreground space-y-4">
                 <p>
                   Open a <code className="font-mono text-foreground">development → staging</code> pull request for{" "}
                   <strong className="text-foreground">{checked.size} {checked.size === 1 ? "repository" : "repositories"}</strong>?

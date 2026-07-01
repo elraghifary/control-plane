@@ -52,7 +52,7 @@ export function ClickUpPrList({
           No GitHub pull request links found in this batch of messages.
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {pullRequests.map((pr) => {
             const state = pr.status === "closed" || pr.status === "merged" ? "closed" : "open";
             return <PrCard key={`${pr.slug}-${pr.number}`} pr={pr} state={state} showRepo />;

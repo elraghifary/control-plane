@@ -51,7 +51,7 @@ export function ChangePasswordForm() {
           disabled={loading}
           className="rounded-full"
         >
-          {loading ? "Saving…" : "Update password"}
+          {loading ? "Saving…" : "Update Password"}
         </Button>
       </form>
     </SettingsSection>
@@ -93,7 +93,7 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
           disabled={loading}
           className="rounded-full"
         >
-          {loading ? "Validating…" : "Update token"}
+          {loading ? "Validating…" : "Update Token"}
         </Button>
       </form>
     </SettingsSection>

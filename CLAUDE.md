@@ -93,3 +93,5 @@ All multi-step dialogs follow this structure:
 ## Some rules
 - Do not commit each file, just summarize and use one commit
 - No need to screenshot browser every changes, use it if its really needed to verify the UI
+- No need to commit and deploy every question or task
+- Use capitalize for button name e.g. Confirm action become Confirm Action

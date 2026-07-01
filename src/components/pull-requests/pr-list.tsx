@@ -70,7 +70,7 @@ export function PrList({
           No {state} pull requests.
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {pullRequests.map((pr) => (
             <PrCard key={`${pr.slug}-${pr.number}`} pr={pr} state={state} />
           ))}

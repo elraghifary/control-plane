@@ -67,7 +67,7 @@ export default async function ReleasesPage({
         </p>
       ) : (
         <>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {pageReleases.map((r) => (
               <ReleaseCard key={r.id} release={r} />
             ))}

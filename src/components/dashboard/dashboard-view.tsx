@@ -21,12 +21,12 @@ export function DashboardView({ summary, envs, merge, repositories, selectedSlug
     <div>
       <div>
         <h1 className="text-lg font-medium">Mission Control</h1>
-        <div className="mt-2">
+        <div className="mt-5">
           <RepositorySelector repositories={repositories} selected={selectedSlug} />
         </div>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 space-y-4">
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <MetricCard label="Active PRs" value={summary.activePullRequests} icon={GitPullRequest} />
         <MetricCard label="Total Releases" value={summary.totalReleases} icon={Tag} />
