@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { listBranchesAction, generateReleaseNotesAction, publishReleaseAction } from "@/app/(app)/releases/actions";
+import { listBranchesAction, generateReleaseNotesAction, publishReleaseAction, syncMainAction } from "@/app/(app)/releases/actions";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 
 type BumpType = "minor" | "patch";
-type Step = "form" | "confirm" | "publishing" | "done";
+type Step = "form" | "confirm" | "syncing" | "publishing" | "done";
 
 function bumpVersion(latestTag: string | null, bump: BumpType): string {
   if (!latestTag) return bump === "minor" ? "v1.0.0" : "v0.0.1";
@@ -43,6 +43,7 @@ export function PublishReleaseDialog({
   const [branches, setBranches] = React.useState<string[]>([]);
   const [notes, setNotes] = React.useState("");
   const [notesLoading, setNotesLoading] = React.useState(false);
+  const [syncMain, setSyncMain] = React.useState(false);
   const [publishResult, setPublishResult] = React.useState<{ tagName: string; htmlUrl: string } | null>(null);
   const [publishError, setPublishError] = React.useState<string | null>(null);
 
@@ -54,6 +55,7 @@ export function PublishReleaseDialog({
     setBranch(defaultBranch);
     setBranchQuery("");
     setNotes("");
+    setSyncMain(false);
     setPublishResult(null);
     setPublishError(null);
     setOpen(true);
@@ -80,8 +82,21 @@ export function PublishReleaseDialog({
   }, [open, step, computedTag, branch]);
 
   async function publish() {
-    setStep("publishing");
     setPublishError(null);
+
+    if (syncMain) {
+      setStep("syncing");
+      const syncRes = await syncMainAction(slug);
+      if (!syncRes.ok) {
+        React.startTransition(() => {
+          setPublishError(syncRes.error ?? "Sync failed");
+          setStep("confirm");
+        });
+        return;
+      }
+    }
+
+    setStep("publishing");
     const res = await publishReleaseAction(slug, computedTag, branch, notes);
     if (res.ok && res.result) {
       router.refresh();
@@ -103,7 +118,7 @@ export function PublishReleaseDialog({
         Publish Release
       </Button>
 
-      <Dialog open={open} onOpenChange={(next) => { if (!next && step !== "publishing") setOpen(false); }}>
+      <Dialog open={open} onOpenChange={(next) => { if (!next && step !== "publishing" && step !== "syncing") setOpen(false); }}>
         <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 p-0">
 
           {/* ── Form step ── */}
@@ -200,6 +215,22 @@ export function PublishReleaseDialog({
                   </Popover>
                 </div>
 
+                {/* Sync Main */}
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card/50 px-3 py-3 transition-colors hover:border-instrument/40">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded accent-instrument"
+                    checked={syncMain}
+                    onChange={(e) => setSyncMain(e.target.checked)}
+                  />
+                  <div>
+                    <p className="text-sm font-medium">Sync Main</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Create and merge a PR from <code className="font-mono">development → main</code> before releasing.
+                    </p>
+                  </div>
+                </label>
+
                 {/* Release notes */}
                 <div>
                   <label className={fieldLabelCls}>Release notes</label>
@@ -235,13 +266,22 @@ export function PublishReleaseDialog({
                 <DialogTitle className="text-base">Confirm Release</DialogTitle>
               </DialogHeader>
               <div className="flex-1 px-5 py-5 space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Publish{" "}
-                  <code className="font-mono font-semibold text-foreground">{computedTag}</code>{" "}
-                  from{" "}
-                  <code className="font-mono text-foreground">{branch}</code>{" "}
-                  as the latest release?
-                </p>
+                {syncMain && (
+                  <p>
+                    Merge <code className="font-mono text-foreground">development → main</code>, then publish{" "}
+                    <code className="font-mono font-semibold text-foreground">{computedTag}</code>{" "}
+                    from <code className="font-mono text-foreground">{branch}</code> as the latest release?
+                  </p>
+                )}
+                {!syncMain && (
+                  <p>
+                    Publish{" "}
+                    <code className="font-mono font-semibold text-foreground">{computedTag}</code>{" "}
+                    from{" "}
+                    <code className="font-mono text-foreground">{branch}</code>{" "}
+                    as the latest release?
+                  </p>
+                )}
                 {publishError && (
                   <p className="text-xs text-status-error">{publishError}</p>
                 )}
@@ -253,6 +293,14 @@ export function PublishReleaseDialog({
                 </Button>
               </div>
             </>
+          )}
+
+          {/* ── Syncing step ── */}
+          {step === "syncing" && (
+            <div className="flex flex-col items-center justify-center px-5 py-16 gap-3">
+              <KineticTextLoader className="scale-[0.45]" />
+              <p className="text-xs text-muted-foreground">Syncing development → main…</p>
+            </div>
           )}
 
           {/* ── Publishing step ── */}
