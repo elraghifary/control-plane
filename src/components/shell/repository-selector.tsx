@@ -20,18 +20,26 @@ const HAPPYKIDS_REPOS = new Set([
   "subscription-service",
   "website",
   "dashboard",
+  "apps"
 ]);
 
-function repositoryGroup(name: string): "HappyKids" | "Art of Ego" | "Other" {
+const UTILS_REPOS = new Set([
+  "go-arch",
+  "go-core",
+  "go-helper",
+]);
+
+function repositoryGroup(name: string): "HappyKids" | "Art of Ego" | "Utils" | "Others" {
   if (name.startsWith("artofego-")) return "Art of Ego";
   if (HAPPYKIDS_REPOS.has(name)) return "HappyKids";
-  return "Other";
+  if (UTILS_REPOS.has(name)) return "Utils";
+  return "Others";
 }
 
 function groupRepositories(repositories: Repository[]) {
-  const groups: Record<string, Repository[]> = { "HappyKids": [], "Art of Ego": [], "Other": [] };
+  const groups: Record<string, Repository[]> = { "HappyKids": [], "Art of Ego": [], "Utils": [], "Others": [] };
   for (const repo of repositories) groups[repositoryGroup(repo.name)].push(repo);
-  return (["HappyKids", "Art of Ego", "Other"] as const)
+  return (["HappyKids", "Art of Ego", "Utils", "Others"] as const)
     .map((label) => ({ label, repos: groups[label] }))
     .filter((g) => g.repos.length > 0);
 }
