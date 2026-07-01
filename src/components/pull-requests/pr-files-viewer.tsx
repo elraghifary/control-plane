@@ -15,7 +15,7 @@ function DiffPatch({ patch }: { patch?: string }) {
   }
   return (
     <pre className="break-words whitespace-pre-wrap font-mono text-[11px] leading-relaxed">
-      {patch.split("\n").map((line, i) => (
+      {patch.trimEnd().split("\n").map((line, i) => (
         <div
           key={i}
           className={cn(
@@ -110,7 +110,7 @@ export function PrFilesViewer({
 
   if (loading) return (
     <div className="flex h-full items-center justify-center">
-      <KineticTextLoader className="scale-[0.4] overflow-hidden" />
+      <KineticTextLoader className="scale-[0.4]" />
     </div>
   );
   if (error) return <p className="p-4 text-xs text-status-error">{error}</p>;
@@ -119,7 +119,7 @@ export function PrFilesViewer({
   const multi = groups.length > 1;
 
   return (
-    <div className="grid h-full grid-cols-1 overflow-hidden sm:grid-cols-[3fr_7fr]">
+    <div className="grid h-full grid-cols-1 sm:grid-cols-[3fr_7fr]">
       {/* ── Left: file list (desktop only) ── */}
       <div className="hidden overflow-y-auto border-r border-border sm:block">
         {groups.map((group, gIdx) => (

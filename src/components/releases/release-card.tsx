@@ -93,8 +93,8 @@ export function ReleaseCard({ release }: { release: Release }) {
         {/* Actions */}
         <div className="shrink-0 self-start">
           <a href={release.htmlUrl} target="_blank" rel="noreferrer">
-            <Button size="sm" variant="outline" className="rounded-full">
-              View
+            <Button size="sm" variant="outline" className="">
+              GitHub
             </Button>
           </a>
         </div>

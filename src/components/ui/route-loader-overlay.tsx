@@ -20,7 +20,7 @@ export function RouteLoaderOverlay({ text = "Loading" }: { text?: string }) {
       aria-busy="true"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
     >
-      <KineticTextLoader text={text} className="overflow-hidden" />
+      <KineticTextLoader text={text} />
     </div>,
     document.body,
   );

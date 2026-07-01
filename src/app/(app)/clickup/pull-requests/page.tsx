@@ -11,11 +11,19 @@ export default async function ClickUpPullRequestsPage({
 }) {
   const { cursor, history } = await searchParams;
 
+  let pullRequests: PullRequest[] = [];
+  let nextCursor: string | null = null;
+  let hasMore = false;
+  let errorMsg: string | null = null;
+
   try {
     const [clickupPage, data] = await Promise.all([
       fetchClickUpPage(cursor),
       getDataService(),
     ]);
+
+    nextCursor = clickupPage.nextCursor;
+    hasMore = clickupPage.hasMore;
 
     const results = await Promise.allSettled(
       clickupPage.items.map((item) =>
@@ -23,32 +31,29 @@ export default async function ClickUpPullRequestsPage({
       )
     );
 
-    const pullRequests = results
+    pullRequests = results
       .map((r) => (r.status === "fulfilled" ? r.value : null))
       .filter((pr): pr is PullRequest => pr !== null);
-
-    const cursorHistory: string[] = history ? history.split(",").filter(Boolean) : [];
-
-    return (
-      <ClickUpPrList
-        pullRequests={pullRequests}
-        nextCursor={clickupPage.nextCursor}
-        hasMore={clickupPage.hasMore}
-        cursorHistory={cursorHistory}
-        currentCursor={cursor}
-      />
-    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
-    return (
-      <ErrorState
-        title="Couldn't load ClickUp pull requests"
-        description={
-          msg.includes("Missing")
-            ? "ClickUp credentials are not configured."
-            : "Failed to fetch from ClickUp API."
-        }
-      />
-    );
+    errorMsg = msg.includes("Missing")
+      ? "ClickUp credentials are not configured."
+      : "Failed to fetch from ClickUp API.";
   }
+
+  if (errorMsg) {
+    return <ErrorState title="Couldn't load ClickUp pull requests" description={errorMsg} />;
+  }
+
+  const cursorHistory: string[] = history ? history.split(",").filter(Boolean) : [];
+
+  return (
+    <ClickUpPrList
+      pullRequests={pullRequests}
+      nextCursor={nextCursor}
+      hasMore={hasMore}
+      cursorHistory={cursorHistory}
+      currentCursor={cursor}
+    />
+  );
 }

@@ -104,7 +104,7 @@ export function PublishReleaseDialog({
       </Button>
 
       <Dialog open={open} onOpenChange={(next) => { if (!next && step !== "publishing") setOpen(false); }}>
-        <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 overflow-hidden p-0">
+        <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 p-0">
 
           {/* ── Form step ── */}
           {step === "form" && (
@@ -122,7 +122,7 @@ export function PublishReleaseDialog({
                 {/* Overlay sits here — outside overflow-y-auto so inset-0 covers the visible box */}
                 {notesLoading && (
                   <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-                    <KineticTextLoader className="scale-[0.35] overflow-hidden" />
+                    <KineticTextLoader className="scale-[0.35]" />
                   </div>
                 )}
 
@@ -214,10 +214,10 @@ export function PublishReleaseDialog({
               </div>{/* end scroll */}
 
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="rounded-full" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button variant="outline" size="sm" className="" onClick={() => setOpen(false)}>Cancel</Button>
                 <Button
                   size="sm"
-                  className="rounded-full"
+                  className=""
                   disabled={notesLoading || !branch.trim()}
                   onClick={() => setStep("confirm")}
                 >
@@ -247,8 +247,8 @@ export function PublishReleaseDialog({
                 )}
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="rounded-full" onClick={() => setStep("form")}>Back</Button>
-                <Button size="sm" className="rounded-full" onClick={publish}>
+                <Button variant="outline" size="sm" className="" onClick={() => setStep("form")}>Back</Button>
+                <Button size="sm" className="" onClick={publish}>
                   Confirm Release
                 </Button>
               </div>
@@ -258,7 +258,7 @@ export function PublishReleaseDialog({
           {/* ── Publishing step ── */}
           {step === "publishing" && (
             <div className="flex flex-col items-center justify-center px-5 py-16">
-              <KineticTextLoader className="scale-[0.45] overflow-hidden" />
+              <KineticTextLoader className="scale-[0.45]" />
             </div>
           )}
 
@@ -285,7 +285,7 @@ export function PublishReleaseDialog({
                 </div>
               </div>
               <div className="flex shrink-0 justify-end border-t border-border px-5 py-4">
-                <Button size="sm" className="rounded-full" onClick={() => setOpen(false)}>Done</Button>
+                <Button size="sm" className="" onClick={() => setOpen(false)}>Done</Button>
               </div>
             </>
           )}

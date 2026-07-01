@@ -52,10 +52,13 @@ export class MockDataService implements DataService {
   async prepareStagingPR(slug: string): Promise<StagingPrepareResult> {
     return { slug, created: true, prNumber: 99, prUrl: `https://github.com/${slug}/pull/99` };
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async listBranches(_slug: string) { return ["main", "development", "staging"]; }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async createPullRequest(slug: string, _title: string, _head: string, _base: string, _body: string) {
     return { number: 100, htmlUrl: `https://github.com/${slug}/pull/100` };
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async compareBranches(_slug: string, _base: string, _head: string) {
     return [
       { filename: "src/app/page.tsx", status: "modified" as const, additions: 12, deletions: 3 },

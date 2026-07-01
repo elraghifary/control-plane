@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, ExternalLink, ArrowLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronsUpDown, ExternalLink, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ function DiffPatch({ patch }: { patch?: string }) {
   }
   return (
     <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed">
-      {patch.split("\n").map((line, i) => (
+      {patch.trimEnd().split("\n").map((line, i) => (
         <div
           key={i}
           className={cn(
@@ -58,7 +58,7 @@ function DiffViewer({
   function toggle(i: number) {
     setCollapsed((prev) => {
       const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
+      if (next.has(i)) { next.delete(i); } else { next.add(i); }
       return next;
     });
   }
@@ -66,7 +66,7 @@ function DiffViewer({
   if (!head || !base || head === base) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-center text-xs text-muted-foreground">
-        {!head || !base ? "Select both branches to see the diff." : ""}
+        Choose different branches or forks above to discuss and review changes.
       </div>
     );
   }
@@ -74,7 +74,7 @@ function DiffViewer({
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <KineticTextLoader className="scale-[0.4] overflow-hidden" />
+        <KineticTextLoader className="scale-[0.4]" />
       </div>
     );
   }
@@ -92,7 +92,7 @@ function DiffViewer({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted px-4 py-2.5 text-xs text-muted-foreground">
         <span>{files.length} file{files.length !== 1 ? "s" : ""} changed</span>
         <span className="tabular-nums">
           <span className="text-status-healthy">+{additions}</span>
@@ -107,7 +107,7 @@ function DiffViewer({
               type="button"
               onClick={() => toggle(i)}
               className={cn(
-                "sticky top-0 z-10 flex w-full items-center justify-between gap-2 border-b border-border/40 bg-card/95 px-4 py-2 backdrop-blur-sm hover:bg-muted/30",
+                "sticky top-0 z-10 flex w-full items-center justify-between gap-2 border-b border-border/40 bg-card/95 px-4 py-2.5 backdrop-blur-sm hover:bg-muted/30",
               )}
             >
               <span className="flex min-w-0 items-center gap-2">
@@ -240,16 +240,16 @@ export function NewPrDialog({ slug }: { slug: string }) {
   }
 
   React.useEffect(() => {
-    if (!open || !head || !base || head === base) {
-      setDiffFiles([]);
-      return;
-    }
+    if (!open || !head || !base || head === base) return;
     let cancelled = false;
-    setDiffLoading(true);
-    compareBranchesAction(slug, base, head).then((files) => {
-      if (!cancelled) { setDiffFiles(files); setDiffLoading(false); }
-    });
-    return () => { cancelled = true; };
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      setDiffLoading(true);
+      compareBranchesAction(slug, base, head).then((files) => {
+        if (!cancelled) { setDiffFiles(files); setDiffLoading(false); }
+      });
+    }, 0);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [slug, head, base, open]);
 
   async function handleSubmit() {
@@ -272,12 +272,12 @@ export function NewPrDialog({ slug }: { slug: string }) {
 
   return (
     <>
-      <Button size="sm" className="rounded-full" onClick={handleOpen}>
-        New pull request
+      <Button size="sm" className="" onClick={handleOpen}>
+        New Pull Request
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v && step !== "creating") setOpen(false); }}>
-        <DialogContent className="flex h-[min(90vh,860px)] max-w-[min(96vw,1200px)] sm:max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0">
+        <DialogContent className="flex h-[min(90vh,860px)] w-[min(96vw,1200px)] max-w-full flex-col gap-0 p-0 sm:max-w-[min(96vw,1200px)]">
 
           <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
             <DialogTitle>
@@ -297,19 +297,21 @@ export function NewPrDialog({ slug }: { slug: string }) {
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
                 <a href={result.htmlUrl} target="_blank" rel="noreferrer">
-                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
+                  <Button size="sm" variant="outline" className="gap-1.5">
                     View on GitHub <ExternalLink className="h-3 w-3" />
                   </Button>
                 </a>
-                <Button size="sm" className="rounded-full" onClick={() => setOpen(false)}>Done</Button>
+                <Button size="sm" className="" onClick={() => setOpen(false)}>Done</Button>
               </div>
             </>
           ) : (
-            <div className="flex min-h-0 flex-1 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col">
 
-              {/* ── Left column: form ── */}
-              <div className="flex w-80 shrink-0 flex-col border-r border-border">
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 space-y-5">
+              <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+
+              {/* ── Form ── */}
+              <div className="flex shrink-0 flex-col border-b border-border sm:w-80 sm:border-b-0 sm:border-r">
+                <div className="overflow-y-auto px-5 py-5 space-y-5 sm:min-h-0 sm:flex-1">
 
                   <div>
                     <label className={fieldLabelCls}>Base</label>
@@ -327,11 +329,11 @@ export function NewPrDialog({ slug }: { slug: string }) {
                   </div>
 
                   <div>
-                    <label className={fieldLabelCls}>Title</label>
+                    <label className={fieldLabelCls}>Title *</label>
                     <input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Pull request title"
+                      placeholder="Title"
                       className="w-full rounded-lg border border-border bg-card/40 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-instrument/60"
                     />
                   </div>
@@ -339,9 +341,9 @@ export function NewPrDialog({ slug }: { slug: string }) {
                   <div>
                     <div className="mb-3 flex items-center justify-between">
                       <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Description <span className="normal-case text-muted-foreground/60">(optional)</span>
+                        Description
                       </label>
-                      <div className="flex overflow-hidden rounded-lg border border-border text-xs">
+                      <div className="flex rounded-lg border border-border text-xs">
                         <button
                           onClick={() => setPreview(false)}
                           className={cn("px-2.5 py-1 transition-colors", !preview ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}
@@ -357,16 +359,16 @@ export function NewPrDialog({ slug }: { slug: string }) {
                       </div>
                     </div>
                     {preview ? (
-                      <div className="min-h-[120px] rounded-lg border border-border bg-card/40 px-3 py-2">
+                      <div className="min-h-[120px] rounded-lg border border-border bg-card/40 px-3 py-2 text-sm">
                         {body.trim() ? <MarkdownView content={body} /> : (
-                          <p className="text-xs text-muted-foreground">Nothing to preview.</p>
+                          <p className="text-muted-foreground">Nothing to preview.</p>
                         )}
                       </div>
                     ) : (
                       <textarea
                         value={body}
                         onChange={(e) => setBody(e.target.value)}
-                        placeholder="Add a description… (markdown supported)"
+                        placeholder="Add your description here…"
                         rows={6}
                         className="w-full resize-none rounded-lg border border-border bg-card/40 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-instrument/60"
                       />
@@ -375,20 +377,22 @@ export function NewPrDialog({ slug }: { slug: string }) {
 
                   {error && <p className="text-xs text-status-error">{error}</p>}
                 </div>
-
-                <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => setOpen(false)} disabled={step === "creating"}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" className="rounded-full" onClick={handleSubmit} disabled={!canSubmit || step === "creating"}>
-                    {step === "creating" ? "Creating…" : "Create pull request"}
-                  </Button>
-                </div>
               </div>
 
-              {/* ── Right column: diff ── */}
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {/* ── Diff ── */}
+              <div className="flex min-h-0 flex-1 flex-col" style={{ minHeight: "200px" }}>
                 <DiffViewer files={diffFiles} loading={diffLoading} head={head} base={base} />
+              </div>
+
+              </div>
+
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
+                <Button size="sm" variant="outline" onClick={() => setOpen(false)} disabled={step === "creating"}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSubmit} disabled={!canSubmit || step === "creating"}>
+                  {step === "creating" ? "Creating…" : "Create pull request"}
+                </Button>
               </div>
 
             </div>

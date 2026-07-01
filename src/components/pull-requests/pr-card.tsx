@@ -105,29 +105,27 @@ export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRe
             </div>
           </div>
           <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-stretch">
+            <Button variant="outline" size="sm" className="hover:border-status-healthy/40 hover:text-status-healthy" onClick={() => setReviewOpen(true)}>
+              {state === "closed" ? "Reviewed" : "Review"}
+            </Button>
             {actionable && (
-              <>
-                <Button variant="outline" size="sm" className="rounded-full hover:border-status-healthy/40 hover:text-status-healthy" onClick={() => setReviewOpen(true)}>
-                  Review
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-full hover:border-instrument/40 hover:text-instrument" disabled={!pr.mergeable} onClick={merge}>
-                  Merge
-                </Button>
-              </>
+              <Button size="sm" variant="outline" className="hover:border-instrument/40 hover:text-instrument" disabled={!pr.mergeable} onClick={merge}>
+                Merge
+              </Button>
             )}
             {state === "open" && (
-              <Button size="sm" variant="outline" className="rounded-full hover:border-status-error/40 hover:text-status-error" onClick={() => setCloseDialogOpen(true)}>
+              <Button size="sm" variant="outline" className="hover:border-status-error/40 hover:text-status-error" onClick={() => setCloseDialogOpen(true)}>
                 Close
               </Button>
             )}
             {state === "closed" && pr.status === "closed" && (
-              <Button size="sm" variant="outline" className="rounded-full hover:border-status-healthy/40 hover:text-status-healthy" onClick={() => setReopenDialogOpen(true)}>
+              <Button size="sm" variant="outline" className="hover:border-status-healthy/40 hover:text-status-healthy" onClick={() => setReopenDialogOpen(true)}>
                 Reopen
               </Button>
             )}
             <a href={pr.htmlUrl} target="_blank" rel="noreferrer">
-              <Button size="sm" variant="outline" className="rounded-full w-full">
-                View
+              <Button size="sm" variant="outline" className="w-full">
+                GitHub
               </Button>
             </a>
           </div>
@@ -143,8 +141,8 @@ export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRe
             Close <span className="font-medium text-foreground">#{pr.number} {pr.title}</span>? This can be reopened later.
           </p>
           <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">
-            <Button variant="outline" size="sm" className="rounded-full" onClick={() => setCloseDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" className="rounded-full border-status-error/40 bg-status-error/10 text-status-error hover:bg-status-error/20" onClick={close}>
+            <Button variant="outline" size="sm" className="" onClick={() => setCloseDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" className="border-status-error/40 bg-status-error/10 text-status-error hover:bg-status-error/20" onClick={close}>
               Close pull request
             </Button>
           </div>
@@ -159,8 +157,8 @@ export function PrCard({ pr, state, showRepo }: { pr: PullRequest; state: PullRe
             Reopen <span className="font-medium text-foreground">#{pr.number} {pr.title}</span>?
           </p>
           <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">
-            <Button variant="outline" size="sm" className="rounded-full" onClick={() => setReopenDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" className="rounded-full border-status-healthy/40 bg-status-healthy/10 text-status-healthy hover:bg-status-healthy/20" onClick={reopen}>
+            <Button variant="outline" size="sm" className="" onClick={() => setReopenDialogOpen(false)}>Cancel</Button>
+            <Button size="sm" className="border-status-healthy/40 bg-status-healthy/10 text-status-healthy hover:bg-status-healthy/20" onClick={reopen}>
               Reopen pull request
             </Button>
           </div>

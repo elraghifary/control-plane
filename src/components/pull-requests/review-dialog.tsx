@@ -101,17 +101,25 @@ export function ReviewDialog({
 
         {/* ── Footer ── */}
         <DialogFooter className="mx-0 mb-0 mt-0 flex-row justify-end gap-3 rounded-none border-t border-border bg-transparent px-4 py-3">
-          <Button variant="outline" size="sm" className="rounded-full" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            className="rounded-full"
-            disabled={!pr.mergeable || pr.status === "closed" || pr.status === "merged"}
-            onClick={approveAndMerge}
-          >
-            Approve &amp; merge
-          </Button>
+          {pr.status === "closed" || pr.status === "merged" ? (
+            <Button size="sm" className="" onClick={onClose}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" className="" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className=""
+                disabled={!pr.mergeable}
+                onClick={approveAndMerge}
+              >
+                Approve &amp; merge
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

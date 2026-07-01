@@ -77,7 +77,7 @@ export default async function ReleasesPage({
             <div className="flex items-center justify-between border-t border-border pt-4">
               <form method="get">
                 <input type="hidden" name="page" value={safePage - 1} />
-                <Button type="submit" variant="outline" size="sm" className="gap-1.5 rounded-full" disabled={safePage <= 1}>
+                <Button type="submit" variant="outline" size="sm" className="gap-1.5" disabled={safePage <= 1}>
                   <ChevronLeft className="h-3.5 w-3.5" />
                   Previous
                 </Button>
@@ -85,7 +85,7 @@ export default async function ReleasesPage({
               <span className="text-xs text-muted-foreground">Page {safePage} of {totalPages}</span>
               <form method="get">
                 <input type="hidden" name="page" value={safePage + 1} />
-                <Button type="submit" variant="outline" size="sm" className="gap-1.5 rounded-full" disabled={safePage >= totalPages}>
+                <Button type="submit" variant="outline" size="sm" className="gap-1.5" disabled={safePage >= totalPages}>
                   Next
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>

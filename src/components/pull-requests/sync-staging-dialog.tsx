@@ -27,7 +27,6 @@ export function SyncStagingDialog({
   const [step, setStep] = React.useState<Step>("select");
   const [checked, setChecked] = React.useState<Set<string>>(new Set());
   const [results, setResults] = React.useState<StagingCreateResult[]>([]);
-  const [currentMsg, setCurrentMsg] = React.useState("");
 
   function handleOpen() {
     setStep("select");
@@ -62,8 +61,6 @@ export function SyncStagingDialog({
     const all: StagingCreateResult[] = [];
     for (let i = 0; i < slugsArr.length; i++) {
       const slug = slugsArr[i];
-      const suffix = slugsArr.length > 1 ? ` (${i + 1}/${slugsArr.length})` : "";
-      setCurrentMsg(`Creating pull request…${suffix}`);
       const prep = await prepareStagingPR(slug);
       if (prep.alreadySynced) {
         all.push({ slug, created: false, merged: false, alreadySynced: true });
@@ -73,7 +70,6 @@ export function SyncStagingDialog({
         all.push({ slug, created: false, merged: false, error: prep.error ?? "Failed to create pull request" });
         continue;
       }
-      setCurrentMsg(`Merging pull request…${suffix}`);
       const mergeRes = await mergePullRequest(slug, prep.prNumber);
       all.push({
         slug,
@@ -90,11 +86,11 @@ export function SyncStagingDialog({
   return (
     <>
       <Button size="sm" onClick={handleOpen}>
-        Sync staging
+        Sync Staging
       </Button>
 
       <Dialog open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
-        <DialogContent className="flex max-h-[90vh] max-w-sm flex-col gap-0 overflow-hidden p-0">
+        <DialogContent className="flex max-h-[90vh] max-w-sm flex-col gap-0 p-0">
 
           {/* ── Select step ── */}
           {step === "select" && (
@@ -140,10 +136,10 @@ export function SyncStagingDialog({
               </div>
 
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="rounded-full" onClick={handleClose}>Cancel</Button>
+                <Button variant="outline" size="sm" className="" onClick={handleClose}>Cancel</Button>
                 <Button
                   size="sm"
-                  className="rounded-full"
+                  className=""
                   disabled={checked.size === 0}
                   onClick={() => setStep("confirm")}
                 >
@@ -172,8 +168,8 @@ export function SyncStagingDialog({
                 <p className="text-xs">If an open pull request already exists, you will be shown its URL instead.</p>
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="rounded-full" onClick={() => setStep("select")}>Back</Button>
-                <Button size="sm" className="rounded-full" onClick={runSync}>
+                <Button variant="outline" size="sm" className="" onClick={() => setStep("select")}>Back</Button>
+                <Button size="sm" className="" onClick={runSync}>
                   Confirm Sync
                 </Button>
               </div>
@@ -183,7 +179,7 @@ export function SyncStagingDialog({
           {/* ── Running step ── */}
           {step === "running" && (
             <div className="flex flex-col items-center justify-center py-16 px-4">
-              <KineticTextLoader className="scale-[0.45] overflow-hidden" />
+              <KineticTextLoader className="scale-[0.45]" />
             </div>
           )}
 
@@ -218,7 +214,7 @@ export function SyncStagingDialog({
                 ))}
               </div>
               <div className="flex shrink-0 justify-end border-t border-border px-5 py-4">
-                <Button size="sm" className="rounded-full" onClick={handleClose}>Done</Button>
+                <Button size="sm" className="" onClick={handleClose}>Done</Button>
               </div>
             </>
           )}
