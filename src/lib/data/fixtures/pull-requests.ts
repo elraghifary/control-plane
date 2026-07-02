@@ -16,6 +16,7 @@ const BASE: Omit<PullRequest, "number" | "slug" | "title" | "sourceBranch" | "de
   htmlUrl: "#",
   checksStatus: "success",
   failingChecks: [],
+  headSha: "abc1234",
 };
 
 export function pullRequestsFor(targetBranch: string): PullRequest[] {

@@ -1,4 +1,4 @@
-import type { Repository, DashboardSummary, EnvironmentStatus, MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint, PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult } from "./types";
+import type { Repository, DashboardSummary, EnvironmentStatus, MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint, PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, NewReviewComment } from "./types";
 
 export type PullRequestReviewEvent = "APPROVE" | "REQUEST_CHANGES" | "COMMENT";
 
@@ -14,6 +14,7 @@ export interface DataService {
   getPullRequest(slug: string, number: number): Promise<PullRequest>;
   getPullRequestFiles(slug: string, number: number): Promise<PullRequestFileChange[]>;
   submitPullRequestReview(slug: string, number: number, event: PullRequestReviewEvent, body?: string): Promise<void>;
+  createReviewComment(slug: string, number: number, input: NewReviewComment): Promise<void>;
   mergePullRequest(slug: string, number: number): Promise<void>;
   closePullRequest(slug: string, number: number): Promise<void>;
   reopenPullRequest(slug: string, number: number): Promise<void>;

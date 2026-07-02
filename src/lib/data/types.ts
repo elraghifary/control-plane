@@ -57,6 +57,17 @@ export interface PullRequest {
   htmlUrl: string;
   checksStatus: PullRequestChecksStatus;
   failingChecks: string[];
+  headSha: string;
+}
+
+export type ReviewCommentSide = "LEFT" | "RIGHT";
+
+export interface NewReviewComment {
+  commitId: string;
+  path: string;
+  line: number;
+  side: ReviewCommentSide;
+  body: string;
 }
 
 export interface StagingSyncResult {

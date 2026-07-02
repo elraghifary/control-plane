@@ -1,34 +1,241 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight } from "lucide-react";
-import type { PullRequestFileChange } from "@/lib/data/types";
+import { toast } from "sonner";
+import { ChevronRight, Plus, MessageSquarePlus, Pencil, Copy as CopyIcon, Link2 } from "lucide-react";
+import type { PullRequestFileChange, ReviewCommentSide } from "@/lib/data/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { fileChangeStatusBadgeVariant } from "./pr-utils";
-import { fetchPullRequestFiles } from "@/app/(app)/pull-requests/actions";
+import { fetchPullRequestFiles, submitLineComment } from "@/app/(app)/pull-requests/actions";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 
-function DiffPatch({ patch }: { patch?: string }) {
+interface DiffRow {
+  type: "hunk" | "context" | "add" | "remove" | "meta";
+  content: string;
+  oldLine?: number;
+  newLine?: number;
+}
+
+const HUNK_RE = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+
+function parseDiffRows(patch: string): DiffRow[] {
+  const rows: DiffRow[] = [];
+  let oldLine = 0;
+  let newLine = 0;
+  for (const line of patch.trimEnd().split("\n")) {
+    const hunk = HUNK_RE.exec(line);
+    if (hunk) {
+      oldLine = parseInt(hunk[1], 10);
+      newLine = parseInt(hunk[2], 10);
+      rows.push({ type: "hunk", content: line });
+      continue;
+    }
+    if (line.startsWith("\\")) {
+      rows.push({ type: "meta", content: line });
+      continue;
+    }
+    if (line.startsWith("+") && !line.startsWith("+++")) {
+      rows.push({ type: "add", content: line, newLine: newLine++ });
+      continue;
+    }
+    if (line.startsWith("-") && !line.startsWith("---")) {
+      rows.push({ type: "remove", content: line, oldLine: oldLine++ });
+      continue;
+    }
+    rows.push({ type: "context", content: line, oldLine: oldLine++, newLine: newLine++ });
+  }
+  return rows;
+}
+
+interface LineCommentTarget {
+  slug: string;
+  number: number;
+  path: string;
+  commitId: string;
+}
+
+function lineCode(content: string) {
+  return content.slice(1);
+}
+
+function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineCommentTarget }) {
+  const [active, setActive] = React.useState<{ index: number; line: number; side: ReviewCommentSide } | null>(null);
+  const [commentText, setCommentText] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+  const [menuOpenIndex, setMenuOpenIndex] = React.useState<number | null>(null);
+
+  const rows = React.useMemo(() => (patch ? parseDiffRows(patch) : []), [patch]);
+
   if (!patch) {
     return <p className="px-4 py-4 text-xs text-muted-foreground">Binary or too large to display.</p>;
   }
+
+  function openComment(index: number, side: ReviewCommentSide, line?: number) {
+    if (!commentable || !line) return;
+    setMenuOpenIndex(null);
+    setActive({ index, side, line });
+    setCommentText("");
+  }
+
+  function openSuggestion(index: number, side: ReviewCommentSide, line: number | undefined, content: string) {
+    if (!commentable || !line) return;
+    setMenuOpenIndex(null);
+    setActive({ index, side, line });
+    setCommentText(`\`\`\`suggestion\n${lineCode(content)}\n\`\`\`\n`);
+  }
+
+  function copyLine(content: string) {
+    navigator.clipboard.writeText(lineCode(content));
+    toast.success("Line copied");
+    setMenuOpenIndex(null);
+  }
+
+  function copyLink(line?: number) {
+    if (!commentable || !line) return;
+    const [owner, repo] = commentable.slug.split("/");
+    const url = `https://github.com/${owner}/${repo}/blob/${commentable.commitId}/${commentable.path}#L${line}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied");
+    setMenuOpenIndex(null);
+  }
+
+  async function submit() {
+    if (!commentable || !active || !commentText.trim()) return;
+    setSubmitting(true);
+    const res = await submitLineComment(
+      commentable.slug, commentable.number, commentable.commitId, commentable.path, active.line, active.side, commentText,
+    );
+    setSubmitting(false);
+    if (!res.ok) {
+      toast.error(res.error ?? "Could not add comment");
+      return;
+    }
+    toast.success("Comment added");
+    setActive(null);
+    setCommentText("");
+  }
+
   return (
-    <pre className="break-words whitespace-pre-wrap font-mono text-[11px] leading-relaxed">
-      {patch.trimEnd().split("\n").map((line, i) => (
-        <div
-          key={i}
-          className={cn(
-            "break-words px-4 py-0.5",
-            line.startsWith("+") && !line.startsWith("+++") && "bg-status-healthy/10 text-status-healthy",
-            line.startsWith("-") && !line.startsWith("---") && "bg-status-error/10 text-status-error",
-            line.startsWith("@@") && "bg-muted/60 text-instrument",
-          )}
-        >
-          {line || " "}
-        </div>
-      ))}
-    </pre>
+    <div className="font-mono text-[11px] leading-relaxed">
+      {rows.map((row, i) => {
+        if (row.type === "hunk" || row.type === "meta") {
+          return (
+            <div key={i} className={cn("flex", row.type === "hunk" && "bg-muted/60 text-instrument", row.type === "meta" && "text-muted-foreground")}>
+              <span className="w-16 shrink-0" />
+              <span className="flex-1 break-words px-2 py-0.5">{row.content}</span>
+            </div>
+          );
+        }
+
+        const oldClickable = !!commentable && row.type === "remove";
+        const newClickable = !!commentable && (row.type === "add" || row.type === "context");
+        const isActive = active?.index === i;
+
+        function gutter(line: number | undefined, side: ReviewCommentSide, clickable: boolean) {
+          if (!clickable || !line) {
+            return (
+              <span className="flex w-8 shrink-0 select-none items-center justify-end px-1 text-right text-muted-foreground/50 group-hover:text-muted-foreground">
+                {line ?? ""}
+              </span>
+            );
+          }
+          const menuOpen = menuOpenIndex === i;
+          return (
+            <span className="flex w-8 shrink-0 select-none">
+              <Popover open={menuOpen} onOpenChange={(v) => setMenuOpenIndex(v ? i : null)}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative flex h-full w-full items-center justify-center text-muted-foreground/50 hover:text-instrument-2"
+                    title="Line actions"
+                  >
+                    <span className={cn("pointer-events-none", !menuOpen && "group-hover:opacity-0", menuOpen && "opacity-0")}>
+                      {line}
+                    </span>
+                    <Plus
+                      className={cn(
+                        "pointer-events-none absolute inset-0 m-auto h-4 w-4 text-instrument opacity-0 transition-opacity",
+                        !menuOpen && "group-hover:opacity-100",
+                        menuOpen && "opacity-100",
+                      )}
+                    />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-44 gap-0.5 p-1">
+                  <button
+                    type="button"
+                    onClick={() => openComment(i, side, line)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted"
+                  >
+                    <MessageSquarePlus className="h-3.5 w-3.5 text-muted-foreground" /> Add comment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openSuggestion(i, side, line, row.content)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" /> Add suggestion
+                  </button>
+                  <div className="my-1 h-px bg-border" />
+                  <button
+                    type="button"
+                    onClick={() => copyLine(row.content)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted"
+                  >
+                    <CopyIcon className="h-3.5 w-3.5 text-muted-foreground" /> Copy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyLink(line)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted"
+                  >
+                    <Link2 className="h-3.5 w-3.5 text-muted-foreground" /> Copy link
+                  </button>
+                </PopoverContent>
+              </Popover>
+            </span>
+          );
+        }
+
+        return (
+          <React.Fragment key={i}>
+            <div
+              className={cn(
+                "group flex",
+                row.type === "add" && "bg-status-healthy/10 text-status-healthy",
+                row.type === "remove" && "bg-status-error/10 text-status-error",
+              )}
+            >
+              {gutter(row.oldLine, "LEFT", oldClickable)}
+              {gutter(row.newLine, "RIGHT", newClickable)}
+              <span className="flex-1 break-words px-2 py-0.5">{row.content || " "}</span>
+            </div>
+            {isActive && (
+              <div className="border-y border-instrument/30 bg-card/60 px-4 py-3">
+                <Textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Leave a comment on this line…"
+                  rows={commentText.includes("```suggestion") ? 5 : 3}
+                  className="bg-card/40 text-xs"
+                  autoFocus
+                />
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setActive(null)}>Cancel</Button>
+                  <Button size="sm" disabled={submitting || !commentText.trim()} onClick={submit}>
+                    {submitting ? "Submitting…" : "Comment"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
   );
 }
 
@@ -42,10 +249,12 @@ export function PrFilesViewer({
   slug,
   number,
   linkedPrs = [],
+  commitId,
 }: {
   slug: string;
   number: number;
   linkedPrs?: Array<{ slug: string; number: number }>;
+  commitId?: string;
 }) {
   const [groups, setGroups] = React.useState<FileGroup[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -167,6 +376,10 @@ export function PrFilesViewer({
             )}
             {group.files.map((file, fIdx) => {
               const key = fileKey(gIdx, fIdx);
+              // Line comments only supported on the PR being reviewed (group 0), which needs its commit sha.
+              const commentable = gIdx === 0 && commitId
+                ? { slug, number, path: file.filename, commitId }
+                : undefined;
               return (
                 <div
                   key={fIdx}
@@ -204,7 +417,7 @@ export function PrFilesViewer({
                           renamed from {file.previousFilename}
                         </p>
                       )}
-                      <DiffPatch patch={file.patch} />
+                      <DiffPatch patch={file.patch} commentable={commentable} />
                     </div>
                   )}
                 </div>

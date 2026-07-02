@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getDataService } from "@/lib/data/get-data-service";
 import type { PullRequestReviewEvent } from "@/lib/data/data-service";
-import type { PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestFileChange } from "@/lib/data/types";
+import type { PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestFileChange, ReviewCommentSide } from "@/lib/data/types";
 
 export async function fetchPullRequest(slug: string, number: number): Promise<PullRequest> {
   const data = await getDataService();
@@ -65,6 +65,24 @@ export async function reopenPullRequest(
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Reopen failed" };
+  }
+}
+
+export async function submitLineComment(
+  slug: string,
+  number: number,
+  commitId: string,
+  path: string,
+  line: number,
+  side: ReviewCommentSide,
+  body: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const data = await getDataService();
+    await data.createReviewComment(slug, number, { commitId, path, line, side, body });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Comment failed" };
   }
 }
 

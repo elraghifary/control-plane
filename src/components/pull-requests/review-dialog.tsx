@@ -176,7 +176,7 @@ export function ReviewDialog({
             </div>
           )}
           <div className="min-h-0 flex-1 overflow-hidden">
-            <PrFilesViewer slug={pr.slug} number={pr.number} linkedPrs={linkedPrs} />
+            <PrFilesViewer slug={pr.slug} number={pr.number} linkedPrs={linkedPrs} commitId={pr.headSha} />
           </div>
         </div>
 

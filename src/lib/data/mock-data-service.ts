@@ -40,6 +40,7 @@ export class MockDataService implements DataService {
     return pr;
   }
   async submitPullRequestReview() { /* no-op in mock */ }
+  async createReviewComment() { /* no-op in mock */ }
   async mergePullRequest() { /* no-op in mock */ }
   async closePullRequest() { /* no-op in mock */ }
   async reopenPullRequest() { /* no-op in mock */ }

@@ -4,7 +4,7 @@ import type {
   Repository, DashboardSummary, EnvironmentStatus,
   MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint,
   PullRequest, PullRequestReviewState, PullRequestReviewer, PullRequestStatus, StagingSyncResult, StagingCreateResult, StagingPrepareResult,
-  PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, PullRequestChecksStatus,
+  PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, PullRequestChecksStatus, NewReviewComment,
 } from "./types";
 
 function parseSlug(slug: string): { owner: string; repo: string } {
@@ -262,6 +262,7 @@ export class OctokitDataService implements DataService {
       htmlUrl: pr.html_url,
       checksStatus,
       failingChecks,
+      headSha: pr.head.sha,
     };
   }
 
@@ -331,6 +332,7 @@ export class OctokitDataService implements DataService {
                 htmlUrl: p.html_url,
                 checksStatus: "none" as const,
                 failingChecks: [],
+                headSha: p.head.sha,
               };
             })
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -372,6 +374,14 @@ export class OctokitDataService implements DataService {
       owner, repo, pull_number: number, event, body: body || undefined,
     });
     this.invalidatePullRequestCache();
+  }
+
+  async createReviewComment(slug: string, number: number, input: NewReviewComment): Promise<void> {
+    const { owner, repo } = parseSlug(slug);
+    await this.octokit.rest.pulls.createReviewComment({
+      owner, repo, pull_number: number,
+      commit_id: input.commitId, path: input.path, line: input.line, side: input.side, body: input.body,
+    });
   }
 
   async mergePullRequest(slug: string, number: number): Promise<void> {
