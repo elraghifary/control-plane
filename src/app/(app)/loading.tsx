@@ -1,5 +1,5 @@
-import { RouteLoaderOverlay } from "@/components/ui/route-loader-overlay";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function AppLoading() {
-  return <RouteLoaderOverlay />;
+  return <PageLoader />;
 }

@@ -48,7 +48,7 @@ export function ChangePasswordForm() {
         <Button
           type="submit"
           size="sm"
-          disabled={loading}
+          loading={loading}
           className="rounded-full"
         >
           {loading ? "Saving…" : "Update Password"}
@@ -90,7 +90,7 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
         <Button
           type="submit"
           size="sm"
-          disabled={loading}
+          loading={loading}
           className="rounded-full"
         >
           {loading ? "Validating…" : "Update Token"}

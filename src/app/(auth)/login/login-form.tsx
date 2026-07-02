@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { Loader2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useNavigationLoading } from "@/components/navigation-loading";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,8 @@ export function LoginForm() {
       <Input name="password" type="password" placeholder="Password" autoComplete="current-password" required />
       {error && <p className="text-[12px] text-status-error">{error}</p>}
       <button type="submit" disabled={pending}
-        className="w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
+        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
+        {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {pending ? "Signing in…" : "Sign in"}
       </button>
       <p className="text-center text-[12px] text-muted-foreground">

@@ -155,7 +155,8 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
                 size="sm"
                 variant="outline"
                 className="hover:border-status-warn/40 hover:text-status-warn"
-                disabled={!blockReason || notifying}
+                disabled={!blockReason}
+                loading={notifying}
                 title={blockReason ? undefined : "No blocking issues to notify about"}
                 onClick={notify}
               >

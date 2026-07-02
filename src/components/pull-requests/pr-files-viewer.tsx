@@ -226,7 +226,7 @@ function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineC
                 />
                 <div className="mt-2 flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={() => setActive(null)}>Cancel</Button>
-                  <Button size="sm" disabled={submitting || !commentText.trim()} onClick={submit}>
+                  <Button size="sm" loading={submitting} disabled={!commentText.trim()} onClick={submit}>
                     {submitting ? "Submitting…" : "Comment"}
                   </Button>
                 </div>

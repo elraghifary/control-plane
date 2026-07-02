@@ -392,7 +392,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
                 <Button size="sm" variant="outline" onClick={() => setOpen(false)} disabled={step === "creating"}>
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleSubmit} disabled={!canSubmit || step === "creating"}>
+                <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} loading={step === "creating"}>
                   {step === "creating" ? "Creating…" : "Create pull request"}
                 </Button>
               </div>

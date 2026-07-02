@@ -36,7 +36,6 @@ function parseLinkedPrs(body: string): Array<{ slug: string; number: number }> {
   }
   return result;
 }
-import { useNavigationLoading } from "@/components/navigation-loading";
 
 export function ReviewDialog({
   pr,
@@ -51,13 +50,13 @@ export function ReviewDialog({
   clickupMessageId?: string;
   currentUserGithubLogin?: string;
 }) {
-  const { runThenRefresh } = useNavigationLoading();
   const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
   const [commentOpen, setCommentOpen] = React.useState(false);
   const [commentText, setCommentText] = React.useState("");
   const [commentPreview, setCommentPreview] = React.useState(false);
   const [commentSubmitting, setCommentSubmitting] = React.useState(false);
+  const [merging, setMerging] = React.useState(false);
 
   React.useEffect(() => {
     if (open) React.startTransition(() => { setError(null); setCommentOpen(false); });
@@ -65,16 +64,16 @@ export function ReviewDialog({
 
   async function approveAndMerge() {
     if (!pr) return;
-    await runThenRefresh(async () => {
-      setError(null);
-      const res = await submitReviewAndMerge(pr.slug, pr.number);
-      if (!res.ok) {
-        setError(res.error ?? "Merge failed");
-        return false;
-      }
-      onClose();
-      return true;
-    });
+    setError(null);
+    setMerging(true);
+    const res = await submitReviewAndMerge(pr.slug, pr.number);
+    setMerging(false);
+    if (!res.ok) {
+      setError(res.error ?? "Merge failed");
+      return;
+    }
+    onClose();
+    router.refresh();
   }
 
   function openComment() {
@@ -187,7 +186,7 @@ export function ReviewDialog({
               <Button variant="outline" size="sm" className="" onClick={() => setCommentOpen(false)}>
                 Cancel
               </Button>
-              <Button size="sm" className="" disabled={commentSubmitting || !commentText.trim()} onClick={submitComment}>
+              <Button size="sm" className="" loading={commentSubmitting} disabled={!commentText.trim()} onClick={submitComment}>
                 {commentSubmitting ? "Submitting…" : "Comment"}
               </Button>
             </>
@@ -198,20 +197,21 @@ export function ReviewDialog({
           ) : (
             <>
               {blockReason && <p className="mr-auto self-center text-xs text-status-error">{blockReason}</p>}
-              <Button variant="outline" size="sm" className="" onClick={onClose}>
+              <Button variant="outline" size="sm" className="" disabled={merging} onClick={onClose}>
                 Cancel
               </Button>
-              <Button variant="outline" size="sm" className="" onClick={openComment}>
+              <Button variant="outline" size="sm" className="" disabled={merging} onClick={openComment}>
                 Comment
               </Button>
               <Button
                 size="sm"
                 className=""
                 disabled={!!blockReason}
+                loading={merging}
                 title={blockReason}
                 onClick={approveAndMerge}
               >
-                Approve &amp; Merge
+                {merging ? "Approving and merging…" : "Approve & Merge"}
               </Button>
             </>
           )}

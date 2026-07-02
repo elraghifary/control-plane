@@ -19,12 +19,7 @@ export function DashboardView({ summary, envs, merge, repositories, selectedSlug
 }) {
   return (
     <div>
-      <div>
-        <h1 className="text-lg font-medium">Mission Control</h1>
-        <div className="mt-5">
-          <RepositorySelector repositories={repositories} selected={selectedSlug} />
-        </div>
-      </div>
+      <RepositorySelector repositories={repositories} selected={selectedSlug} />
 
       <div className="mt-5 space-y-4">
       <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">

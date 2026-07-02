@@ -12,9 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { prepareStagingPR, mergePullRequest } from "@/app/(app)/pull-requests/actions";
-import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 
-type Step = "select" | "confirm" | "running" | "done";
+type Step = "select" | "confirm" | "done";
 
 export function SyncStagingDialog({
   repositories,
@@ -27,11 +26,13 @@ export function SyncStagingDialog({
   const [step, setStep] = React.useState<Step>("select");
   const [checked, setChecked] = React.useState<Set<string>>(new Set());
   const [results, setResults] = React.useState<StagingCreateResult[]>([]);
+  const [syncing, setSyncing] = React.useState(false);
 
   function handleOpen() {
     setStep("select");
     setChecked(new Set([selectedSlug].filter(Boolean)));
     setResults([]);
+    setSyncing(false);
     setOpen(true);
   }
 
@@ -55,7 +56,7 @@ export function SyncStagingDialog({
   }
 
   async function runSync() {
-    setStep("running");
+    setSyncing(true);
     setResults([]);
     const slugsArr = [...checked];
     const all: StagingCreateResult[] = [];
@@ -80,6 +81,7 @@ export function SyncStagingDialog({
       });
     }
     setResults(all);
+    setSyncing(false);
     setStep("done");
   }
 
@@ -89,7 +91,7 @@ export function SyncStagingDialog({
         Sync Staging
       </Button>
 
-      <Dialog open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
+      <Dialog open={open} onOpenChange={(next) => { if (!next && !syncing) handleClose(); }}>
         <DialogContent className="flex max-h-[90vh] max-w-sm flex-col gap-0 p-0">
 
           {/* ── Select step ── */}
@@ -168,19 +170,12 @@ export function SyncStagingDialog({
                 <p className="text-xs">If an open pull request already exists, you will be shown its URL instead.</p>
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="" onClick={() => setStep("select")}>Back</Button>
-                <Button size="sm" className="" onClick={runSync}>
-                  Confirm Sync
+                <Button variant="outline" size="sm" className="" disabled={syncing} onClick={() => setStep("select")}>Back</Button>
+                <Button size="sm" className="" loading={syncing} onClick={runSync}>
+                  {syncing ? "Syncing…" : "Confirm Sync"}
                 </Button>
               </div>
             </>
-          )}
-
-          {/* ── Running step ── */}
-          {step === "running" && (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <KineticTextLoader className="scale-[0.45]" />
-            </div>
           )}
 
           {/* ── Done step ── */}

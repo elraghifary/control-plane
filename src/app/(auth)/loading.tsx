@@ -1,5 +1,5 @@
-import { RouteLoaderOverlay } from "@/components/ui/route-loader-overlay";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function AuthLoading() {
-  return <RouteLoaderOverlay />;
+  return <PageLoader className="min-h-[160px]" />;
 }

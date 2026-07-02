@@ -79,7 +79,7 @@ function InviteDialog() {
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
                 <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button size="sm" disabled={pending || !email.trim()} onClick={invite}>
+                <Button size="sm" loading={pending} disabled={!email.trim()} onClick={invite}>
                   {pending ? "Generating…" : "Generate Invite Link"}
                 </Button>
               </div>

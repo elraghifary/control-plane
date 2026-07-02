@@ -1,5 +1,5 @@
-import { RouteLoaderOverlay } from "@/components/ui/route-loader-overlay";
+import { PageLoader } from "@/components/ui/page-loader";
 
 export default function ClickUpPullRequestsLoading() {
-  return <RouteLoaderOverlay />;
+  return <PageLoader />;
 }
