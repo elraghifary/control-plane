@@ -2,7 +2,7 @@
 
 import { sendReplyMessage } from "@/lib/clickup/client";
 
-export async function notifyBlockedPrAction(
+export async function sendClickUpReplyAction(
   messageId: string,
   content: string,
 ): Promise<{ ok: boolean; error?: string }> {

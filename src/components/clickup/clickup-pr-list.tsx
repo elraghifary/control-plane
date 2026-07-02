@@ -19,12 +19,14 @@ export function ClickUpPrList({
   hasMore,
   cursorHistory,
   currentCursor,
+  currentUserGithubLogin,
 }: {
   items: ClickUpPrEntry[];
   nextCursor: string | null;
   hasMore: boolean;
   cursorHistory: string[];
   currentCursor?: string;
+  currentUserGithubLogin?: string;
 }) {
   const { navigate } = useNavigationLoading();
 
@@ -69,6 +71,7 @@ export function ClickUpPrList({
                 showRepo
                 clickupUser={clickupAuthor}
                 clickupMessageId={messageId}
+                currentUserGithubLogin={currentUserGithubLogin}
               />
             );
           })}

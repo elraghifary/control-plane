@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import { fetchClickUpPage } from "@/lib/clickup/client";
 import { getDataService } from "@/lib/data/get-data-service";
 import { ClickUpPrList, type ClickUpPrEntry } from "@/components/clickup/clickup-pr-list";
@@ -14,13 +15,16 @@ export default async function ClickUpPullRequestsPage({
   let nextCursor: string | null = null;
   let hasMore = false;
   let errorMsg: string | null = null;
+  let currentUserGithubLogin = "";
 
   try {
-    const [clickupPage, data] = await Promise.all([
+    const [clickupPage, data, session] = await Promise.all([
       fetchClickUpPage(cursor),
       getDataService(),
+      auth(),
     ]);
 
+    currentUserGithubLogin = session?.user?.githubLogin ?? "";
     nextCursor = clickupPage.nextCursor;
     hasMore = clickupPage.hasMore;
 
@@ -55,6 +59,7 @@ export default async function ClickUpPullRequestsPage({
       hasMore={hasMore}
       cursorHistory={cursorHistory}
       currentCursor={cursor}
+      currentUserGithubLogin={currentUserGithubLogin}
     />
   );
 }

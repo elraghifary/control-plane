@@ -12,9 +12,9 @@ import { formatPrDate, prStatusBadgeVariant, prStatusLabel, reviewStatusBadgeVar
 import { LabelBadge, isPullRequestActionable } from "./pr-meta";
 import { ReviewDialog } from "./review-dialog";
 import { mergePullRequest, closePullRequest, reopenPullRequest } from "@/app/(app)/pull-requests/actions";
-import { notifyBlockedPrAction } from "@/app/(app)/clickup/pull-requests/actions";
+import { sendClickUpReplyAction } from "@/app/(app)/clickup/pull-requests/actions";
 
-export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId }: { pr: PullRequest; state: PullRequestListState; showRepo?: boolean; clickupUser?: string; clickupMessageId?: string }) {
+export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, currentUserGithubLogin }: { pr: PullRequest; state: PullRequestListState; showRepo?: boolean; clickupUser?: string; clickupMessageId?: string; currentUserGithubLogin?: string }) {
   const { runThenRefresh } = useNavigationLoading();
   const [reviewOpen, setReviewOpen] = React.useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = React.useState(false);
@@ -49,8 +49,8 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId }: {
   async function notify() {
     if (!clickupMessageId || !blockReason) return;
     setNotifying(true);
-    const content = blockReason;
-    const res = await notifyBlockedPrAction(clickupMessageId, content);
+    const content = `⚠️ Merge blocked: ${blockReason}`;
+    const res = await sendClickUpReplyAction(clickupMessageId, content);
     setNotifying(false);
     if (!res.ok) {
       toast.error(res.error ?? "Could not send notification");
@@ -180,7 +180,13 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId }: {
           </div>
         </div>
       </article>
-      <ReviewDialog pr={pr} open={reviewOpen} onClose={() => setReviewOpen(false)} />
+      <ReviewDialog
+        pr={pr}
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        clickupMessageId={clickupMessageId}
+        currentUserGithubLogin={currentUserGithubLogin}
+      />
       <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
