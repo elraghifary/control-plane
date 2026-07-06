@@ -44,6 +44,7 @@ export function PublishReleaseDialog({
   const [branches, setBranches] = React.useState<string[]>([]);
   const [notes, setNotes] = React.useState("");
   const [notesLoading, setNotesLoading] = React.useState(false);
+  const lastGeneratedNotes = React.useRef("");
   const [syncMain, setSyncMain] = React.useState(false);
   const [publishResult, setPublishResult] = React.useState<{ tagName: string; htmlUrl: string } | null>(null);
   const [publishError, setPublishError] = React.useState<string | null>(null);
@@ -57,6 +58,7 @@ export function PublishReleaseDialog({
     setBranch(defaultBranch);
     setBranchQuery("");
     setNotes("");
+    lastGeneratedNotes.current = "";
     setSyncMain(false);
     setPublishResult(null);
     setPublishError(null);
@@ -76,6 +78,7 @@ export function PublishReleaseDialog({
       setNotesLoading(true);
       const generated = await generateReleaseNotesAction(slug, computedTag, branch, latestTag ?? undefined);
       if (!cancelled) {
+        lastGeneratedNotes.current = generated;
         setNotes(generated);
         setNotesLoading(false);
       }
@@ -88,6 +91,7 @@ export function PublishReleaseDialog({
     setPublishError(null);
     setPublishing(true);
 
+    let finalNotes = notes;
     if (syncMain) {
       const syncRes = await syncMainAction(slug);
       if (!syncRes.ok) {
@@ -95,9 +99,15 @@ export function PublishReleaseDialog({
         setPublishError(syncRes.error ?? "Sync failed");
         return;
       }
+      // The merge above can add commits to `branch` that weren't reflected when
+      // notes were first generated — refresh them, unless the user edited by hand.
+      if (notes === lastGeneratedNotes.current) {
+        finalNotes = await generateReleaseNotesAction(slug, computedTag, branch, latestTag ?? undefined);
+        setNotes(finalNotes);
+      }
     }
 
-    const res = await publishReleaseAction(slug, computedTag, branch, notes);
+    const res = await publishReleaseAction(slug, computedTag, branch, finalNotes);
     if (res.ok && res.result) {
       router.refresh();
       React.startTransition(() => {
