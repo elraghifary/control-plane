@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.vercel
+.data
+.env*
+!.env.example
+*.md
+k8s
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

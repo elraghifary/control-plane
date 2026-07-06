@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane-deploy
+  namespace: development
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: control-plane-app
+  template:
+    metadata:
+      labels:
+        app: control-plane-app
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-provisioning: spot
+      containers:
+        - name: control-plane-container
+          image: asia-southeast1-docker.pkg.dev/{{GCP_PROJECT_ID}}/development/control-plane:{{TAG}}
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: control-plane-secret
+          ports:
+            - containerPort: 3000
+          resources:
+            limits:
+              memory: '128Mi'
+              cpu: '64m'
+            requests:
+              memory: '64Mi'
+              cpu: '32m'
+          readinessProbe:
+            httpGet:
+              port: 3000
+              path: /api/health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3

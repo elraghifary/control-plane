@@ -1,5 +1,5 @@
-// Applies a .sql file directly against Supabase Postgres via POSTGRES_URL_NON_POOLING.
-// Usage: node scripts/run-sql.mjs supabase/migrations/000x_name.sql
+// Applies a .sql file directly against the control plane's Postgres database.
+// Usage: node scripts/run-sql.mjs db/migrations/000x_name.sql
 import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 
@@ -9,16 +9,14 @@ if (!file) {
   process.exit(1);
 }
 
-const rawConnectionString = process.env.POSTGRES_URL_NON_POOLING;
-if (!rawConnectionString) {
-  console.error("Missing POSTGRES_URL_NON_POOLING env var (yarn vercel env pull or check .env.local)");
+const connectionString = process.env.DB_CONTROL_PLANE;
+if (!connectionString) {
+  console.error("Missing DB_CONTROL_PLANE env var (check .env.local)");
   process.exit(1);
 }
-// Strip sslmode from the URL so it doesn't override the explicit `ssl` option below.
-const connectionString = rawConnectionString.replace(/[?&]sslmode=[^&]+/, "");
 
 const sql = await readFile(file, "utf8");
-const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+const client = new Client({ connectionString });
 await client.connect();
 try {
   await client.query(sql);
