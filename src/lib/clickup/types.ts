@@ -22,3 +22,21 @@ export interface ClickUpPage {
   nextCursor: string | null;
   hasMore: boolean;
 }
+
+export interface ClickUpSprint {
+  id: string;
+  name: string;
+}
+
+export interface ClickUpMember {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface ClickUpSignoffTask {
+  id: string;
+  name: string;
+  url: string;
+  assigneeEmails: string[];
+}

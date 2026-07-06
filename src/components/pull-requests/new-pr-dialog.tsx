@@ -167,7 +167,7 @@ function BranchCombobox({
     <Popover modal open={open} onOpenChange={(v) => { setOpen(v); if (!v) setQuery(""); }}>
       <PopoverTrigger asChild>
         <button className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/40 px-3 py-2 text-sm transition-colors hover:border-instrument/40">
-          <span className={cn("min-w-0 flex-1 truncate text-left font-mono text-xs", !value && "text-muted-foreground")}>
+          <span className={cn("min-w-0 flex-1 truncate text-left", !value && "text-muted-foreground")}>
             {value || placeholder}
           </span>
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
@@ -194,7 +194,7 @@ function BranchCombobox({
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
               >
                 <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", value !== b && "opacity-0")} />
-                <span className="min-w-0 flex-1 break-all font-mono text-xs">{b}</span>
+                <span className="min-w-0 flex-1 break-all">{b}</span>
               </button>
             ))
           )}

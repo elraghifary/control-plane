@@ -12,7 +12,7 @@ import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 import { Textarea } from "@/components/ui/textarea";
 
 type BumpType = "minor" | "patch";
-type Step = "form" | "confirm" | "syncing" | "publishing" | "done";
+type Step = "form" | "confirm" | "done";
 
 function bumpVersion(latestTag: string | null, bump: BumpType): string {
   if (!latestTag) return bump === "minor" ? "v1.0.0" : "v0.0.1";
@@ -47,6 +47,7 @@ export function PublishReleaseDialog({
   const [syncMain, setSyncMain] = React.useState(false);
   const [publishResult, setPublishResult] = React.useState<{ tagName: string; htmlUrl: string } | null>(null);
   const [publishError, setPublishError] = React.useState<string | null>(null);
+  const [publishing, setPublishing] = React.useState(false);
 
   const computedTag = bumpVersion(latestTag, bump);
 
@@ -59,6 +60,7 @@ export function PublishReleaseDialog({
     setSyncMain(false);
     setPublishResult(null);
     setPublishError(null);
+    setPublishing(false);
     setOpen(true);
     listBranchesAction(slug).then((b) => React.startTransition(() => setBranches(b)));
   }
@@ -84,32 +86,28 @@ export function PublishReleaseDialog({
 
   async function publish() {
     setPublishError(null);
+    setPublishing(true);
 
     if (syncMain) {
-      setStep("syncing");
       const syncRes = await syncMainAction(slug);
       if (!syncRes.ok) {
-        React.startTransition(() => {
-          setPublishError(syncRes.error ?? "Sync failed");
-          setStep("confirm");
-        });
+        setPublishing(false);
+        setPublishError(syncRes.error ?? "Sync failed");
         return;
       }
     }
 
-    setStep("publishing");
     const res = await publishReleaseAction(slug, computedTag, branch, notes);
     if (res.ok && res.result) {
       router.refresh();
       React.startTransition(() => {
+        setPublishing(false);
         setPublishResult(res.result!);
         setStep("done");
       });
     } else {
-      React.startTransition(() => {
-        setPublishError(res.error ?? "Publish failed");
-        setStep("confirm");
-      });
+      setPublishing(false);
+      setPublishError(res.error ?? "Publish failed");
     }
   }
 
@@ -119,7 +117,7 @@ export function PublishReleaseDialog({
         Publish Release
       </Button>
 
-      <Dialog open={open} onOpenChange={(next) => { if (!next && step !== "publishing" && step !== "syncing") setOpen(false); }}>
+      <Dialog open={open} onOpenChange={(next) => { if (!next && !publishing) setOpen(false); }}>
         <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 p-0">
 
           {/* ── Form step ── */}
@@ -173,7 +171,7 @@ export function PublishReleaseDialog({
                   <Popover modal open={branchPopoverOpen} onOpenChange={(v) => { setBranchPopoverOpen(v); if (!v) setBranchQuery(""); }}>
                     <PopoverTrigger asChild>
                       <button className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
-                        <span className={cn("min-w-0 flex-1 truncate text-left font-mono", !branch && "text-muted-foreground")}>
+                        <span className={cn("min-w-0 flex-1 truncate text-left", !branch && "text-muted-foreground")}>
                           {branch || "Select branch…"}
                         </span>
                         <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
@@ -200,7 +198,7 @@ export function PublishReleaseDialog({
                             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
                           >
                             <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", branch !== b && "opacity-0")} />
-                            <span className="min-w-0 flex-1 break-all font-mono">{b}</span>
+                            <span className="min-w-0 flex-1 break-all">{b}</span>
                           </button>
                         ))}
                         {filteredBranches.length === 0 && branchQuery && (
@@ -288,27 +286,12 @@ export function PublishReleaseDialog({
                 )}
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="" onClick={() => setStep("form")}>Back</Button>
-                <Button size="sm" className="" onClick={publish}>
-                  Confirm Release
+                <Button variant="outline" size="sm" className="" disabled={publishing} onClick={() => setStep("form")}>Back</Button>
+                <Button size="sm" className="" loading={publishing} onClick={publish}>
+                  {publishing ? "Releasing…" : "Confirm Release"}
                 </Button>
               </div>
             </>
-          )}
-
-          {/* ── Syncing step ── */}
-          {step === "syncing" && (
-            <div className="flex flex-col items-center justify-center px-5 py-16 gap-3">
-              <KineticTextLoader className="scale-[0.45]" />
-              <p className="text-xs text-muted-foreground">Syncing development → main…</p>
-            </div>
-          )}
-
-          {/* ── Publishing step ── */}
-          {step === "publishing" && (
-            <div className="flex flex-col items-center justify-center px-5 py-16">
-              <KineticTextLoader className="scale-[0.45]" />
-            </div>
           )}
 
           {/* ── Done step ── */}

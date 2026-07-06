@@ -36,7 +36,7 @@ function repositoryGroup(name: string): "HappyKids" | "Art of Ego" | "Utils" | "
   return "Others";
 }
 
-function groupRepositories(repositories: Repository[]) {
+export function groupRepositories(repositories: Repository[]) {
   const groups: Record<string, Repository[]> = { "HappyKids": [], "Art of Ego": [], "Utils": [], "Others": [] };
   for (const repo of repositories) groups[repositoryGroup(repo.name)].push(repo);
   return (["HappyKids", "Art of Ego", "Utils", "Others"] as const)
@@ -64,7 +64,7 @@ export function RepositorySelector({ repositories, selected, className }: { repo
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("min-w-56 justify-between border-border bg-card/40 font-mono text-xs backdrop-blur hover:border-instrument/40", className)}
+          className={cn("min-w-56 justify-between border-border bg-card/40 backdrop-blur hover:border-instrument/40", className)}
         >
           <span className="flex min-w-0 items-center gap-2">
             <Folder className="size-4 shrink-0 text-instrument" />
@@ -87,7 +87,6 @@ export function RepositorySelector({ repositories, selected, className }: { repo
                       key={repository.slug}
                       value={repository.slug}
                       onSelect={() => choose(repository.slug)}
-                      className="font-mono text-xs"
                     >
                       <Check className={cn("size-4", repository.slug === selected ? "opacity-100" : "opacity-0")} />
                       {repository.slug}
