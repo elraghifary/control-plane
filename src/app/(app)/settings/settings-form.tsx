@@ -79,12 +79,12 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
       description="The token is encrypted at rest and used only on the server to read and write GitHub data."
     >
       {githubLogin && (
-        <p className="mb-3 font-mono text-xs text-muted-foreground">Connected as {githubLogin}</p>
+        <p className="mb-3 text-xs text-muted-foreground">Connected as {githubLogin}</p>
       )}
       <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
         <Input name="pat" type="password" placeholder="ghp_… or github_pat_…" autoComplete="off" required />
         <p className="text-[11px] text-muted-foreground">
-          Needs <code className="font-mono">repo</code> and <code className="font-mono">read:org</code> scopes.
+          Needs <span className="font-medium text-foreground">repo</span> and <span className="font-medium text-foreground">read:org</span> scopes.
         </p>
         <StatusMessage result={result} />
         <Button

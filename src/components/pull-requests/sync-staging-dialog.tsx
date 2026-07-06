@@ -100,7 +100,7 @@ export function SyncStagingDialog({
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
                 <DialogTitle className="text-base">Sync Development → Staging</DialogTitle>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  A pull request will be opened from <code className="font-mono">development</code> → <code className="font-mono">staging</code> for each selected repository.
+                  A pull request will be opened from <span>development</span> → <span>staging</span> for each selected repository.
                 </p>
               </DialogHeader>
 
@@ -128,7 +128,7 @@ export function SyncStagingDialog({
                         checked={checked.has(r.slug)}
                         onChange={() => toggleRepo(r.slug)}
                       />
-                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{r.slug}</span>
+                      <span className="min-w-0 flex-1 truncate text-xs">{r.slug}</span>
                       {r.slug === selectedSlug && (
                         <span className="shrink-0 text-[10px] text-instrument">current</span>
                       )}
@@ -159,10 +159,10 @@ export function SyncStagingDialog({
               </DialogHeader>
               <div className="flex-1 px-5 py-5 text-sm text-muted-foreground space-y-4">
                 <p>
-                  Open a <code className="font-mono text-foreground">development → staging</code> pull request for{" "}
+                  Open a <span className="text-foreground">development → staging</span> pull request for{" "}
                   <strong className="text-foreground">{checked.size} {checked.size === 1 ? "repository" : "repositories"}</strong>?
                 </p>
-                <ul className="space-y-1 font-mono text-xs">
+                <ul className="space-y-1 text-xs">
                   {[...checked].map((slug) => (
                     <li key={slug} className="text-muted-foreground">· {slug}</li>
                   ))}
@@ -187,7 +187,7 @@ export function SyncStagingDialog({
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
                 {results.map((r) => (
                   <div key={r.slug} className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
-                    <span className="font-mono text-xs text-foreground">{r.slug}</span>
+                    <span className="text-xs text-foreground">{r.slug}</span>
                     {r.alreadySynced ? (
                       <p className="text-xs text-muted-foreground">Already in sync — no changes to merge.</p>
                     ) : r.merged && r.prUrl ? (

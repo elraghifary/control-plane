@@ -119,7 +119,7 @@ function DiffViewer({
                     !collapsed.has(i) && "rotate-90",
                   )}
                 />
-                <span className="min-w-0 break-all text-left font-mono text-[11px]">{file.filename}</span>
+                <span className="min-w-0 break-all text-left text-[11px]">{file.filename}</span>
               </span>
               <span className="ml-2 flex shrink-0 items-center gap-1">
                 {file.status !== "modified" && (
@@ -132,7 +132,7 @@ function DiffViewer({
             {!collapsed.has(i) && (
               <div className="bg-background/40">
                 {file.previousFilename && (
-                  <p className="border-b border-border px-4 py-1.5 font-mono text-[11px] text-muted-foreground">
+                  <p className="border-b border-border px-4 py-1.5 text-[11px] text-muted-foreground">
                     renamed from {file.previousFilename}
                   </p>
                 )}
@@ -294,7 +294,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
                 <div className="space-y-1 rounded-lg border border-border bg-card/50 px-4 py-3">
                   <p className="text-xs text-muted-foreground">#{result.number}</p>
                   <p className="text-sm font-medium">{title}</p>
-                  <p className="font-mono text-xs text-muted-foreground">{base} ← {head}</p>
+                  <p className="text-xs text-muted-foreground">{base} ← {head}</p>
                 </div>
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">

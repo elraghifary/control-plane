@@ -23,6 +23,7 @@ import {
   listSignoffTasksAction,
   getLatestTagAction,
   createSignoffAction,
+  shareSignoffAction,
 } from "@/app/(app)/releases/actions";
 
 type Step = "form" | "done";
@@ -408,6 +409,8 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
 
   const [error, setError] = React.useState<string | null>(null);
   const [resultUrl, setResultUrl] = React.useState<string | null>(null);
+  const [sharing, setSharing] = React.useState(false);
+  const [shared, setShared] = React.useState(false);
 
   function handleOpen() {
     setStep("form");
@@ -419,6 +422,8 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
     setNotes("");
     setError(null);
     setResultUrl(null);
+    setSharing(false);
+    setShared(false);
     setOpen(true);
 
     setSprintsLoading(true);
@@ -496,13 +501,31 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
     setStep("done");
   }
 
+  async function share() {
+    if (!resultUrl || !selectedSprint) return;
+    setSharing(true);
+    const res = await shareSignoffAction(selectedSprint.name, resultUrl);
+    setSharing(false);
+    if (!res.ok) {
+      toast.error(res.error ?? "Could not share to Product Sync");
+      return;
+    }
+    setShared(true);
+    toast.success("Shared to Product Sync");
+  }
+
   return (
     <>
       <Button size="sm" onClick={handleOpen}>Create Sign-off</Button>
 
       <Dialog open={open} onOpenChange={(next) => { if (!next && !submitting) setOpen(false); }}>
         <DialogContent
-          className="flex h-[min(90vh,860px)] max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1200px)]"
+          className={cn(
+            "flex flex-col gap-0 overflow-hidden p-0",
+            step === "form"
+              ? "h-[min(90vh,860px)] max-w-[min(96vw,1200px)] sm:max-w-[min(96vw,1200px)]"
+              : "max-w-md",
+          )}
           showCloseButton
         >
           {step === "form" ? (
@@ -631,7 +654,10 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                   </div>
                 </div>
               </div>
-              <div className="flex shrink-0 justify-end border-t border-border px-5 py-4">
+              <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
+                <Button variant="outline" size="sm" disabled={shared} loading={sharing} onClick={share}>
+                  {shared ? "Shared" : sharing ? "Sharing…" : "Share To Product Sync"}
+                </Button>
                 <Button size="sm" onClick={() => setOpen(false)}>Done</Button>
               </div>
             </>

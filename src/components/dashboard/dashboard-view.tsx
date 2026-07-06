@@ -30,7 +30,7 @@ export function DashboardView({ summary, envs, merge, repositories, selectedSlug
           icon={Rocket}
           footer={
             <div className="mt-2 space-y-0.5">
-              <div className="font-mono text-sm">{summary.lastDeployment.ref}</div>
+              <div className="text-sm">{summary.lastDeployment.ref}</div>
               <div className="text-[11px] text-muted-foreground">{formatReleaseDate(summary.lastDeployment.deployedAt)}</div>
             </div>
           }

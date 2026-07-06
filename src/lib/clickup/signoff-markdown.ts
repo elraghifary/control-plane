@@ -63,15 +63,12 @@ export function buildSignoffMarkdown(input: SignoffInput): string {
     .join("\n");
 
   return `# **Deployment Services Sign-off**
-
 This document serves as a formal sign-off for the deployment of all services. Approval from both the Quality Assurance (QA) and Product teams is required before proceeding with deployment.
 
 # **Deployment Information**
-
 **Deployment Date:** ${input.deploymentDate}
 **Deployment Sprints:** ${input.sprintName}
 **Deployment Scope:**
-
 | HappyKids Services | Version | Type | Post-Deploy Checked | PIC |
 | :---- | :---- | :---- | :---: | :---- |
 ${serviceRows}
@@ -100,8 +97,6 @@ Environment Staging and/or Test Flight
 | QA Team Member | Date | Approval | Comment |
 | :---- | :---- | ----- | :---- |
 ${qaRows}
-
-##
 
 ## Product Team
 
@@ -132,5 +127,31 @@ ${input.notes || "_None._"}
 # Next Steps
 
 Upon receiving all required approvals, the deployment process will proceed as scheduled. For any questions or concerns regarding this sign-off, please contact ${mailtoLink(input.contact)}.
+`;
+}
+
+export function buildSignoffShareMessage(sprintName: string, docUrl: string): string {
+  return `${docUrl}
+
+🚀 Thread Deployment – ${sprintName}
+
+@tech-team @product-team
+
+Halo semua! Mohon bantuannya untuk cek dan update status deployment di thread ini ya.
+
+Pre-deployment:
+
+🔎 Double check environment sesuai docs
+🗄️ Pastikan perubahan DDL atau DML sudah sesuai
+🧠 Cek kebutuhan redis, kafka, feature flag, permission, atau config lain
+🧪 Pastikan sudah dites secukupnya (minimal happy case)
+
+Post-deployment:
+
+✅ Lakukan pengecekan langsung di production (login, buat order, buat appointment, dll sesuai task)
+👀 Pastikan tidak ada bug atau test case yang terlewat
+📝 Update hasil pengecekan di thread ini (bug, rollback, dll)
+
+Terima kasih! 🙌
 `;
 }

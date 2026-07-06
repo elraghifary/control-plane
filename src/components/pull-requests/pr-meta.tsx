@@ -24,7 +24,7 @@ export function PullRequestMeta({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="font-mono text-xs text-muted-foreground">{pr.slug}</p>
+      <p className="text-xs text-muted-foreground">{pr.slug}</p>
 
       <div className="text-xs">
         <div className="flex flex-col items-start gap-1 sm:hidden">

@@ -23,11 +23,11 @@ export function StatusWidget({ status }: { status: EnvironmentStatus }) {
       <div className="mt-2 flex items-center gap-2.5">
         <span className={tone.text}><RadarRings size={44} /></span>
         <div>
-          <div className="font-mono text-base font-medium">{status.env === "main" ? status.marker : status.openPRs}</div>
+          <div className="text-base font-medium">{status.env === "main" ? status.marker : status.openPRs}</div>
           <div className="text-[10px] text-muted-foreground">{status.env === "main" ? "current tag" : "open PRs"}</div>
         </div>
       </div>
-      <div className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+      <div className="mt-1.5 text-[10px] text-muted-foreground">
         {status.progressPct != null ? `deploy in progress · ${status.progressPct}%` : `marker · ${status.marker}`}
       </div>
     </div>

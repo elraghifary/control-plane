@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getDataService } from "@/lib/data/get-data-service";
 import type { DataService } from "@/lib/data/data-service";
 import type { PublishReleaseResult } from "@/lib/data/types";
-import { listSprints, listWorkspaceMembers, listSprintTasks, createSignoffDoc } from "@/lib/clickup/client";
-import { buildSignoffMarkdown, type SignoffInput } from "@/lib/clickup/signoff-markdown";
+import { listSprints, listWorkspaceMembers, listSprintTasks, createSignoffDoc, shareSignoffToProductSync } from "@/lib/clickup/client";
+import { buildSignoffMarkdown, buildSignoffShareMessage, type SignoffInput } from "@/lib/clickup/signoff-markdown";
 import type { ClickUpSprint, ClickUpMember, ClickUpSignoffTask } from "@/lib/clickup/types";
 
 async function describeSyncFailure(data: DataService, slug: string, number: number): Promise<string | null> {
@@ -109,11 +109,20 @@ export async function createSignoffAction(
 ): Promise<{ ok: boolean; url?: string; error?: string }> {
   try {
     const content = buildSignoffMarkdown(input);
-    const name = `${input.sprintName} - ${input.deploymentDate}`;
+    const name = `${input.deploymentDate}`;
     const doc = await createSignoffDoc(name, content);
     return { ok: true, url: doc.url };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not create sign-off doc" };
+  }
+}
+
+export async function shareSignoffAction(sprintName: string, url: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await shareSignoffToProductSync(buildSignoffShareMessage(sprintName, url));
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not share to Product Sync" };
   }
 }
 

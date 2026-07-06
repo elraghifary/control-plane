@@ -197,3 +197,42 @@ export async function createSignoffDoc(name: string, content: string): Promise<{
 
   return { id: doc.id, url: `https://app.clickup.com/${workspaceId}/v/dc/${doc.id}` };
 }
+
+async function findChannelIdByName(baseUrl: string, token: string, workspaceId: string, channelName: string): Promise<string> {
+  const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/chat/channels?limit=100`, {
+    headers: { Authorization: token },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  const json = await res.json();
+  type RawChannel = { id: string; name?: string };
+  const channels: RawChannel[] = json.data ?? [];
+  const match = channels.find((c) => c.name?.toLowerCase() === channelName.toLowerCase());
+  if (!match) throw new Error(`ClickUp channel "${channelName}" not found`);
+  return match.id;
+}
+
+export async function shareSignoffToProductSync(content: string): Promise<void> {
+  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
+  const token = process.env.CLICKUP_PERSONAL_TOKEN_SUPPORT;
+  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
+  if (!token || !workspaceId) {
+    throw new Error("Missing CLICKUP_PERSONAL_TOKEN_SUPPORT or CLICKUP_WORKSPACE_ID");
+  }
+
+  const channelId = await findChannelIdByName(baseUrl, token, workspaceId, "Product Sync");
+
+  const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/chat/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "message", content, content_format: "text/md" }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+}

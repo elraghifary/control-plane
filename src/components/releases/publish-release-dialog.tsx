@@ -127,7 +127,7 @@ export function PublishReleaseDialog({
                 <DialogTitle className="text-base">Publish Release</DialogTitle>
                 {latestTag && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Current latest: <code className="font-mono">{latestTag}</code>
+                    Current latest: <span>{latestTag}</span>
                   </p>
                 )}
               </DialogHeader>
@@ -157,7 +157,7 @@ export function PublishReleaseDialog({
                         ].join(" ")}
                       >
                         <div className="text-xs font-medium capitalize">{b}</div>
-                        <div className="mt-0.5 font-mono text-sm font-semibold">
+                        <div className="mt-0.5 text-sm font-semibold">
                           {bumpVersion(latestTag, b)}
                         </div>
                       </button>
@@ -206,7 +206,7 @@ export function PublishReleaseDialog({
                             onClick={() => { setBranch(branchQuery); setBranchQuery(""); setBranchPopoverOpen(false); }}
                             className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
                           >
-                            Use &ldquo;<span className="font-mono">{branchQuery}</span>&rdquo;
+                            Use &ldquo;<span>{branchQuery}</span>&rdquo;
                           </button>
                         )}
                       </div>
@@ -225,7 +225,7 @@ export function PublishReleaseDialog({
                   <div>
                     <p className="text-sm font-medium">Sync Main</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Create and merge a PR from <code className="font-mono">development → main</code> before releasing.
+                      Create and merge a PR from <span>development → main</span> before releasing.
                     </p>
                   </div>
                 </label>
@@ -237,7 +237,7 @@ export function PublishReleaseDialog({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={8}
-                    className="bg-card/50 font-mono text-xs"
+                    className="bg-card/50 text-xs"
                     placeholder="Release notes will be auto-generated…"
                   />
                 </div>
@@ -267,17 +267,17 @@ export function PublishReleaseDialog({
               <div className="flex-1 px-5 py-5 space-y-4 text-sm text-muted-foreground">
                 {syncMain && (
                   <p>
-                    Merge <code className="font-mono text-foreground">development → main</code>, then publish{" "}
-                    <code className="font-mono font-semibold text-foreground">{computedTag}</code>{" "}
-                    from <code className="font-mono text-foreground">{branch}</code> as the latest release?
+                    Merge <span className="text-foreground">development → main</span>, then publish{" "}
+                    <span className="font-semibold text-foreground">{computedTag}</span>{" "}
+                    from <span className="text-foreground">{branch}</span> as the latest release?
                   </p>
                 )}
                 {!syncMain && (
                   <p>
                     Publish{" "}
-                    <code className="font-mono font-semibold text-foreground">{computedTag}</code>{" "}
+                    <span className="font-semibold text-foreground">{computedTag}</span>{" "}
                     from{" "}
-                    <code className="font-mono text-foreground">{branch}</code>{" "}
+                    <span className="text-foreground">{branch}</span>{" "}
                     as the latest release?
                   </p>
                 )}
@@ -302,7 +302,7 @@ export function PublishReleaseDialog({
               </DialogHeader>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
                 <div className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
-                  <span className="font-mono text-xs text-foreground">{publishResult.tagName}</span>
+                  <span className="text-xs text-foreground">{publishResult.tagName}</span>
                   <div className="flex items-center gap-1.5 text-xs text-status-healthy">
                     <span>Published as latest release</span>
                     <a

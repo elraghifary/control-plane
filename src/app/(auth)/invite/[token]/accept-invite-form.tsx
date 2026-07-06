@@ -38,7 +38,7 @@ export function AcceptInviteForm({ token, email }: { token: string; email: strin
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <h1 className="text-base font-medium">Set up your account</h1>
-        <p className="mt-1 text-xs text-muted-foreground">Invited as <span className="font-mono text-foreground">{email}</span></p>
+        <p className="mt-1 text-xs text-muted-foreground">Invited as <span className="text-foreground">{email}</span></p>
       </div>
       <Input name="password" type="password" placeholder="Password (min 8 chars)" autoComplete="new-password" required />
       <Input name="confirmPassword" type="password" placeholder="Confirm password" autoComplete="new-password" required />

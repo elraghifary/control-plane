@@ -335,7 +335,7 @@ export function PrFilesViewer({
           <div key={gIdx}>
             {multi && (
               <div className="sticky top-0 z-10 border-b border-t border-border bg-muted/60 px-3 py-1.5 backdrop-blur-sm first:border-t-0">
-                <span className="font-mono text-[11px] font-medium text-instrument">{group.label}</span>
+                <span className="text-[11px] font-medium text-instrument">{group.label}</span>
               </div>
             )}
             {group.files.map((file, fIdx) => (
@@ -351,7 +351,7 @@ export function PrFilesViewer({
                     !collapsed.has(fileKey(gIdx, fIdx)) && "rotate-90",
                   )}
                 />
-                <span className="min-w-0 flex-1 break-all font-mono text-[11px] leading-snug">{file.filename}</span>
+                <span className="min-w-0 flex-1 break-all text-[11px] leading-snug">{file.filename}</span>
                 <span className="flex shrink-0 items-center gap-1 pt-0.5">
                   <Badge variant="healthy" size="sm">+{file.additions}</Badge>
                   <Badge variant="error" size="sm">-{file.deletions}</Badge>
@@ -368,7 +368,7 @@ export function PrFilesViewer({
           <div key={gIdx} className={cn(multi && gIdx > 0 && "border-t-2 border-border")}>
             {multi && (
               <div className="sticky top-0 z-20 flex h-8 items-center gap-2 border-b border-border bg-muted/80 px-4 backdrop-blur-sm">
-                <span className="font-mono text-xs font-medium text-instrument">{group.label}</span>
+                <span className="text-xs font-medium text-instrument">{group.label}</span>
                 <span className="text-xs text-muted-foreground">
                   {group.files.length} {group.files.length === 1 ? "file" : "files"}
                 </span>
@@ -399,7 +399,7 @@ export function PrFilesViewer({
                           !collapsed.has(key) && "rotate-90",
                         )}
                       />
-                      <span className="min-w-0 break-all text-left font-mono text-[11px]">{file.filename}</span>
+                      <span className="min-w-0 break-all text-left text-[11px]">{file.filename}</span>
                     </span>
                     <span className="ml-2 flex shrink-0 items-center gap-1">
                       {file.status !== "modified" && (
@@ -413,7 +413,7 @@ export function PrFilesViewer({
                   {!collapsed.has(key) && (
                     <div className="bg-background/40">
                       {file.previousFilename && (
-                        <p className="border-b border-border px-4 py-1.5 font-mono text-[11px] text-muted-foreground">
+                        <p className="border-b border-border px-4 py-1.5 text-[11px] text-muted-foreground">
                           renamed from {file.previousFilename}
                         </p>
                       )}

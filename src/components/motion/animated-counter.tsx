@@ -20,7 +20,7 @@ export function AnimatedCounter({ value, className, suffix }: { value: number; c
   React.useEffect(() => spring.on("change", (v) => setDisplay(Math.round(v))), [spring]);
 
   return (
-    <span ref={ref} className={cn("font-mono tabular-nums", className)}>
+    <span ref={ref} className={cn("tabular-nums", className)}>
       {display.toLocaleString()}{suffix}
     </span>
   );

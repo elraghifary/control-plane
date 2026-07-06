@@ -124,7 +124,7 @@ export function ReviewDialog({
           <DialogTitle className="flex min-w-0 flex-wrap items-center gap-2 pr-10">
             <GitPullRequest className="h-4 w-4 shrink-0 text-instrument" />
             <span className="min-w-0 font-medium text-foreground">{pr.title}</span>
-            <Badge variant="outline" size="sm" className="shrink-0 font-mono">
+            <Badge variant="outline" size="sm" className="shrink-0">
               #{pr.number}
             </Badge>
           </DialogTitle>

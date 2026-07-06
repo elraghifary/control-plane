@@ -23,7 +23,7 @@ const badgeVariants = cva(
       },
       shape: {
         pill: "rounded-full",
-        tag: "rounded-lg px-2 py-1 text-xs font-mono",
+        tag: "rounded-lg px-2 py-1 text-xs",
       },
     },
     defaultVariants: {

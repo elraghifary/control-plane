@@ -57,7 +57,7 @@ export function ReleaseCard({ release }: { release: Release }) {
               href={release.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-sm font-semibold hover:text-instrument hover:underline"
+              className="text-sm font-semibold hover:text-instrument hover:underline"
             >
               {release.tagName}
             </a>
@@ -78,7 +78,7 @@ export function ReleaseCard({ release }: { release: Release }) {
             </span>
             <span className="inline-flex items-center gap-1">
               <GitBranch className="h-3.5 w-3.5" />
-              <code className="font-mono">{release.targetBranch}</code>
+              <span>{release.targetBranch}</span>
             </span>
           </div>
 
