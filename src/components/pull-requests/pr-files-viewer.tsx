@@ -128,7 +128,7 @@ function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineC
           return (
             <div key={i} className={cn("flex", row.type === "hunk" && "bg-muted/60 text-instrument", row.type === "meta" && "text-muted-foreground")}>
               <span className="w-16 shrink-0" />
-              <span className="flex-1 break-words px-2 py-0.5">{row.content}</span>
+              <span className="flex-1 whitespace-pre-wrap break-words px-2 py-0.5">{row.content}</span>
             </div>
           );
         }
@@ -214,7 +214,7 @@ function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineC
             >
               {gutter(row.oldLine, "LEFT", oldClickable)}
               {gutter(row.newLine, "RIGHT", newClickable)}
-              <span className="flex-1 break-words px-2 py-0.5">{row.content || " "}</span>
+              <span className="flex-1 whitespace-pre-wrap break-words px-2 py-0.5">{row.content || " "}</span>
             </div>
             {isActive && (
               <div className="border-y border-instrument/30 bg-card/60 px-4 py-3">
