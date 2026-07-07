@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { inviteUserAction, updateUserAdminAction, deleteUserAction } from "./actions";
+import { copyToClipboard } from "@/lib/utils";
 
 export interface SettingsUser {
   id: string;
@@ -49,10 +50,11 @@ function InviteDialog() {
     router.refresh();
   }
 
-  function copyLink() {
+  async function copyLink() {
     if (!link) return;
-    navigator.clipboard.writeText(link);
-    toast.success("Invite link copied");
+    const ok = await copyToClipboard(link);
+    if (ok) toast.success("Invite link copied");
+    else toast.error("Could not copy link");
   }
 
   return (

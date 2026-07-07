@@ -67,11 +67,15 @@ export function ReviewDialog({
     setError(null);
     setMerging(true);
     const res = await submitReviewAndMerge(pr.slug, pr.number);
-    setMerging(false);
     if (!res.ok) {
+      setMerging(false);
       setError(res.error ?? "Merge failed");
       return;
     }
+    // GitHub's API can briefly lag before a just-merged PR's status is
+    // reflected on read — wait a moment before refetching the list.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setMerging(false);
     onClose();
     router.refresh();
   }

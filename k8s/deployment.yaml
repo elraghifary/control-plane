@@ -26,11 +26,11 @@ spec:
             - containerPort: 3000
           resources:
             limits:
+              memory: '256Mi'
+              cpu: '128m'
+            requests:
               memory: '128Mi'
               cpu: '64m'
-            requests:
-              memory: '64Mi'
-              cpu: '32m'
           readinessProbe:
             httpGet:
               port: 3000

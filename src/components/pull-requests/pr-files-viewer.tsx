@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import { fileChangeStatusBadgeVariant } from "./pr-utils";
 import { fetchPullRequestFiles, submitLineComment } from "@/app/(app)/pull-requests/actions";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
@@ -88,18 +88,20 @@ function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineC
     setCommentText(`\`\`\`suggestion\n${lineCode(content)}\n\`\`\`\n`);
   }
 
-  function copyLine(content: string) {
-    navigator.clipboard.writeText(lineCode(content));
-    toast.success("Line copied");
+  async function copyLine(content: string) {
+    const ok = await copyToClipboard(lineCode(content));
+    if (ok) toast.success("Line copied");
+    else toast.error("Could not copy line");
     setMenuOpenIndex(null);
   }
 
-  function copyLink(line?: number) {
+  async function copyLink(line?: number) {
     if (!commentable || !line) return;
     const [owner, repo] = commentable.slug.split("/");
     const url = `https://github.com/${owner}/${repo}/blob/${commentable.commitId}/${commentable.path}#L${line}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied");
+    const ok = await copyToClipboard(url);
+    if (ok) toast.success("Link copied");
+    else toast.error("Could not copy link");
     setMenuOpenIndex(null);
   }
 
