@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getDataService } from "@/lib/data/get-data-service";
+import { triggerProductionRelease, resolveQueueItemBuildUrl } from "@/lib/jenkins/client";
 import type { DataService } from "@/lib/data/data-service";
 import type { PublishReleaseResult } from "@/lib/data/types";
 
@@ -79,5 +80,27 @@ export async function publishReleaseAction(
     return { ok: true, result };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Publish failed" };
+  }
+}
+
+export async function releaseProductionAction(
+  repoName: string,
+  tag: string,
+): Promise<{ ok: boolean; queueUrl?: string | null; error?: string }> {
+  try {
+    const result = await triggerProductionRelease(repoName, tag);
+    return { ok: true, queueUrl: result.queueUrl };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not trigger production release" };
+  }
+}
+
+export async function resolveJenkinsBuildUrlAction(
+  queueUrl: string,
+): Promise<{ ok: boolean; buildUrl?: string | null; error?: string }> {
+  try {
+    return { ok: true, buildUrl: await resolveQueueItemBuildUrl(queueUrl) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not resolve build" };
   }
 }

@@ -272,7 +272,7 @@ export function PublishReleaseDialog({
           {step === "confirm" && (
             <>
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
-                <DialogTitle className="text-base">Confirm Release</DialogTitle>
+                <DialogTitle className="text-base">Confirm Publish Release</DialogTitle>
               </DialogHeader>
               <div className="flex-1 px-5 py-5 space-y-4 text-sm text-muted-foreground">
                 {syncMain && (
@@ -308,7 +308,7 @@ export function PublishReleaseDialog({
           {step === "done" && publishResult && (
             <>
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
-                <DialogTitle className="text-base">Release Results</DialogTitle>
+                <DialogTitle className="text-base">Publish Release Results</DialogTitle>
               </DialogHeader>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
                 <div className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">

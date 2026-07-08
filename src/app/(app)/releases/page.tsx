@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getDataService } from "@/lib/data/get-data-service";
 import { PublishReleaseDialog } from "@/components/releases/publish-release-dialog";
+import { ReleaseProductionDialog } from "@/components/releases/release-production-dialog";
 import { ReleaseCard } from "@/components/releases/release-card";
 import { RepositorySelector } from "@/components/shell/repository-selector";
 import { ErrorState } from "@/components/states/error-state";
@@ -49,6 +50,7 @@ export default async function ReleasesPage({
 
   const latestTag = releases.find((r) => r.isLatest)?.tagName ?? releases[0]?.tagName ?? null;
   const defaultBranch = releases[0]?.targetBranch ?? "main";
+  const repoName = repositories.find((r) => r.slug === selectedSlug)?.name ?? "";
 
   return (
     <div className="space-y-6">
@@ -56,7 +58,10 @@ export default async function ReleasesPage({
         <RepositorySelector repositories={repositories} selected={selectedSlug} />
         <div className="flex gap-2">
           {selectedSlug && (
-            <PublishReleaseDialog slug={selectedSlug} latestTag={latestTag} defaultBranch={defaultBranch} />
+            <>
+              <PublishReleaseDialog slug={selectedSlug} latestTag={latestTag} defaultBranch={defaultBranch} />
+              <ReleaseProductionDialog repoName={repoName} tags={releases.map((r) => r.tagName)} />
+            </>
           )}
         </div>
       </div>
