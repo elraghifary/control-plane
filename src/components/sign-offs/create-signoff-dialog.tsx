@@ -24,7 +24,7 @@ import {
   getLatestTagAction,
   createSignoffAction,
   shareSignoffAction,
-} from "@/app/(app)/releases/actions";
+} from "@/app/(app)/sign-offs/actions";
 
 type Step = "form" | "done";
 
@@ -633,7 +633,7 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
                 <Button variant="outline" size="sm" disabled={submitting} onClick={() => setOpen(false)}>Cancel</Button>
                 <Button size="sm" disabled={!canSubmit} loading={submitting} onClick={submit}>
-                  {submitting ? "Creating…" : "Create Sign-off"}
+                  {submitting ? "Creating…" : "Create"}
                 </Button>
               </div>
             </>

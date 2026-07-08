@@ -32,6 +32,15 @@ export function MarkdownView({ content }: { content: string }) {
             </blockquote>
           ),
           strong: ({ children }) => <strong className="font-medium text-foreground">{children}</strong>,
+          table: ({ children }) => (
+            <div className="mb-2 overflow-x-auto">
+              <table className="w-full border-collapse text-xs">{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead>{children}</thead>,
+          tr: ({ children }) => <tr>{children}</tr>,
+          th: ({ children }) => <th className="border border-border px-2 py-1.5 text-left font-medium text-foreground">{children}</th>,
+          td: ({ children }) => <td className="border border-border px-2 py-1.5 align-top">{children}</td>,
         }}
       >
         {content}

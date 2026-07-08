@@ -275,7 +275,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
   return (
     <>
       <Button size="sm" className="" onClick={handleOpen}>
-        New Pull Request
+        Create Pull Request
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!v && step !== "creating") setOpen(false); }}>
@@ -283,7 +283,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
 
           <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
             <DialogTitle>
-              {step === "done" ? "Pull Request Created" : "New Pull Request"}
+              {step === "done" ? "Pull Request Created" : "Create Pull Request"}
             </DialogTitle>
           </DialogHeader>
 
@@ -391,7 +391,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
                   Cancel
                 </Button>
                 <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} loading={step === "creating"}>
-                  {step === "creating" ? "Creating…" : "Create pull request"}
+                  {step === "creating" ? "Creating…" : "Create"}
                 </Button>
               </div>
 

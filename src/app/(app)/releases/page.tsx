@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getDataService } from "@/lib/data/get-data-service";
 import { PublishReleaseDialog } from "@/components/releases/publish-release-dialog";
-import { CreateSignoffDialog } from "@/components/releases/create-signoff-dialog";
 import { ReleaseCard } from "@/components/releases/release-card";
 import { RepositorySelector } from "@/components/shell/repository-selector";
 import { ErrorState } from "@/components/states/error-state";
@@ -56,7 +55,6 @@ export default async function ReleasesPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <RepositorySelector repositories={repositories} selected={selectedSlug} />
         <div className="flex gap-2">
-          <CreateSignoffDialog repositories={repositories} />
           {selectedSlug && (
             <PublishReleaseDialog slug={selectedSlug} latestTag={latestTag} defaultBranch={defaultBranch} />
           )}

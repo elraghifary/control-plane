@@ -40,3 +40,16 @@ export interface ClickUpSignoffTask {
   url: string;
   assigneeEmails: string[];
 }
+
+export interface ClickUpSignoffDoc {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  htmlUrl: string;
+}
+
+export interface ClickUpSignoffDocPage {
+  docs: ClickUpSignoffDoc[];
+  nextCursor: string | null;
+}

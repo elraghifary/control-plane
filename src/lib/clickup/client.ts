@@ -1,4 +1,4 @@
-import type { ClickUpRawMessage, ClickUpPrItem, ClickUpPage, ClickUpSprint, ClickUpMember, ClickUpSignoffTask } from "./types";
+import type { ClickUpRawMessage, ClickUpPrItem, ClickUpPage, ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpSignoffDocPage } from "./types";
 
 const PR_URL_RE = /https:\/\/github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)/g;
 const V2_BASE_URL = "https://api.clickup.com/api/v2";
@@ -196,6 +196,83 @@ export async function createSignoffDoc(name: string, content: string): Promise<{
   }
 
   return { id: doc.id, url: `https://app.clickup.com/${workspaceId}/v/dc/${doc.id}` };
+}
+
+export async function listSignoffDocs(cursor?: string): Promise<ClickUpSignoffDocPage> {
+  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
+  const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
+  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
+  const docsFolderId = process.env.CLICKUP_SIGNOFF_DOCS_FOLDER_ID;
+  if (!token || !workspaceId || !docsFolderId) {
+    throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA, CLICKUP_WORKSPACE_ID, or CLICKUP_SIGNOFF_DOCS_FOLDER_ID");
+  }
+
+  const url = new URL(`${baseUrl}/workspaces/${workspaceId}/docs`);
+  url.searchParams.set("parent_id", docsFolderId);
+  url.searchParams.set("parent_type", "5");
+  url.searchParams.set("limit", "10");
+  if (cursor) url.searchParams.set("cursor", cursor);
+
+  const res = await fetch(url.toString(), { headers: { Authorization: token }, cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  const json = await res.json();
+  type RawDoc = { id: string; name: string; date_created: number; date_updated: number };
+  const docs: RawDoc[] = json.docs ?? [];
+  return {
+    docs: docs
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        createdAt: new Date(Number(d.date_created)).toISOString(),
+        updatedAt: new Date(Number(d.date_updated)).toISOString(),
+        htmlUrl: `https://app.clickup.com/${workspaceId}/v/dc/${d.id}`,
+      }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    nextCursor: json.next_cursor || null,
+  };
+}
+
+export async function getSignoffDocPage(docId: string): Promise<{ pageId: string; content: string } | null> {
+  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
+  const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
+  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
+  if (!token || !workspaceId) throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA or CLICKUP_WORKSPACE_ID");
+
+  const url = new URL(`${baseUrl}/workspaces/${workspaceId}/docs/${docId}/pages`);
+  url.searchParams.set("content_format", "text/md");
+
+  const res = await fetch(url.toString(), { headers: { Authorization: token }, cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  const json = await res.json();
+  type RawPage = { id: string; content: string };
+  const pages: RawPage[] = Array.isArray(json) ? json : [];
+  const page = pages[0];
+  return page ? { pageId: page.id, content: page.content } : null;
+}
+
+export async function updateSignoffDocPage(docId: string, pageId: string, content: string): Promise<void> {
+  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
+  const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
+  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
+  if (!token || !workspaceId) throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA or CLICKUP_WORKSPACE_ID");
+
+  const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/docs/${docId}/pages/${pageId}`, {
+    method: "PUT",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ content, content_format: "text/md" }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
 }
 
 async function findChannelIdByName(baseUrl: string, token: string, workspaceId: string, channelName: string): Promise<string> {
