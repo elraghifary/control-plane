@@ -42,9 +42,13 @@ function checkbox(checked: boolean): string {
   return checked ? "[x]" : "[ ]";
 }
 
+// Table cells don't render markdown checkboxes as interactive, so offer both
+// symbols and let the approver delete whichever doesn't apply.
+const EMOJI_CHECKLIST = "✅ / ❌";
+
 export function buildSignoffMarkdown(input: SignoffInput): string {
   const serviceRows = input.services
-    .map((s) => `| ${s.service} | ${s.version} | ${s.type} |  | ${mailtoLink(s.pic)} |`)
+    .map((s) => `| ${s.service} | ${s.version} | ${s.type} | ${EMOJI_CHECKLIST} | ${mailtoLink(s.pic)} |`)
     .join("\n");
 
   const taskRows = input.tasks
@@ -55,11 +59,11 @@ export function buildSignoffMarkdown(input: SignoffInput): string {
     .join("\n");
 
   const qaRows = input.qaMembers
-    .map((m) => `| ${mailtoLink(m)} | ${m.date} |  |  |`)
+    .map((m) => `| ${mailtoLink(m)} | ${m.date} | ${EMOJI_CHECKLIST} |  |`)
     .join("\n");
 
   const productRows = input.productMembers
-    .map((m) => `| ${mailtoLink(m)} | ${m.date} |  |  |`)
+    .map((m) => `| ${mailtoLink(m)} | ${m.date} | ${EMOJI_CHECKLIST} |  |`)
     .join("\n");
 
   return `# **Deployment Services Sign-off**
