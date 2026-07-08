@@ -1,14 +1,14 @@
 "use client";
 
 import { FileText, Calendar, Clock } from "lucide-react";
-import type { ClickUpSignoffDoc } from "@/lib/clickup/types";
+import type { ClickUpSignoffPage } from "@/lib/clickup/types";
 import { Button } from "@/components/ui/button";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function SignoffCard({ doc, onEdit }: { doc: ClickUpSignoffDoc; onEdit: () => void }) {
+export function SignoffCard({ doc, onEdit }: { doc: ClickUpSignoffPage; onEdit: () => void }) {
   return (
     <article className="rounded-xl border border-border/70 bg-card/50 p-4 backdrop-blur transition-colors hover:border-instrument/30">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

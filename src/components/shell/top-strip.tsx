@@ -28,7 +28,7 @@ export function TopStrip({ githubLogin }: { githubLogin?: string }) {
 
   return (
     <div className="fixed inset-x-0 top-0 z-40">
-      <header className="mx-auto flex max-w-[1400px] items-center gap-2 border-b border-border bg-card/40 px-3 pb-2 pt-3 backdrop-blur-xl sm:gap-3 sm:rounded-2xl sm:border">
+      <header className="mx-auto flex max-w-[1400px] items-center gap-2 border-b border-border bg-card/40 px-3 pb-2 pt-3 backdrop-blur-xl sm:gap-3 sm:rounded-b-2xl sm:border">
         {/* Burger — mobile only */}
         <button
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground md:hidden"

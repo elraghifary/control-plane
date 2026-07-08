@@ -7,12 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MarkdownView } from "@/components/pull-requests/markdown-view";
 import { cn } from "@/lib/utils";
-import type { ClickUpSignoffDoc } from "@/lib/clickup/types";
-import { fetchSignoffDocContentAction, saveSignoffDocContentAction } from "@/app/(app)/sign-offs/actions";
+import type { ClickUpSignoffPage } from "@/lib/clickup/types";
+import { fetchSignoffPageContentAction, saveSignoffPageContentAction } from "@/app/(app)/sign-offs/actions";
 
-function EditSignoffDialogContent({ doc, onClose }: { doc: ClickUpSignoffDoc; onClose: () => void }) {
+function EditSignoffDialogContent({ doc, onClose }: { doc: ClickUpSignoffPage; onClose: () => void }) {
   const [loading, setLoading] = React.useState(true);
-  const [pageId, setPageId] = React.useState<string | null>(null);
   const [content, setContent] = React.useState("");
   const [preview, setPreview] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
@@ -20,24 +19,22 @@ function EditSignoffDialogContent({ doc, onClose }: { doc: ClickUpSignoffDoc; on
 
   React.useEffect(() => {
     let cancelled = false;
-    fetchSignoffDocContentAction(doc.id).then((res) => {
+    fetchSignoffPageContentAction(doc.id).then((res) => {
       if (cancelled) return;
       setLoading(false);
       if (!res.ok) {
         setError(res.error ?? "Could not load document content");
         return;
       }
-      setPageId(res.pageId ?? null);
       setContent(res.content ?? "");
     });
     return () => { cancelled = true; };
   }, [doc.id]);
 
   async function save() {
-    if (!pageId) return;
     setSaving(true);
     setError(null);
-    const res = await saveSignoffDocContentAction(doc.id, pageId, content);
+    const res = await saveSignoffPageContentAction(doc.id, content);
     setSaving(false);
     if (!res.ok) {
       toast.error(res.error ?? "Could not save document");
@@ -97,7 +94,7 @@ function EditSignoffDialogContent({ doc, onClose }: { doc: ClickUpSignoffDoc; on
 
       <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
         <Button variant="outline" size="sm" disabled={saving} onClick={onClose}>Cancel</Button>
-        <Button size="sm" disabled={loading || !pageId} loading={saving} onClick={save}>
+        <Button size="sm" disabled={loading} loading={saving} onClick={save}>
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
@@ -105,7 +102,7 @@ function EditSignoffDialogContent({ doc, onClose }: { doc: ClickUpSignoffDoc; on
   );
 }
 
-export function EditSignoffDialog({ doc, onClose }: { doc: ClickUpSignoffDoc | null; onClose: () => void }) {
+export function EditSignoffDialog({ doc, onClose }: { doc: ClickUpSignoffPage | null; onClose: () => void }) {
   return (
     <Dialog open={!!doc} onOpenChange={(next) => { if (!next) onClose(); }}>
       {doc && <EditSignoffDialogContent key={doc.id} doc={doc} onClose={onClose} />}

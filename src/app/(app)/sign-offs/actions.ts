@@ -6,14 +6,14 @@ import {
   listSprints,
   listWorkspaceMembers,
   listSprintTasks,
-  createSignoffDoc,
-  listSignoffDocs,
-  getSignoffDocPage,
-  updateSignoffDocPage,
+  createSignoffPage,
+  listSignoffPages,
+  getSignoffPageContent,
+  updateSignoffPage,
   shareSignoffToProductSync,
 } from "@/lib/clickup/client";
 import { buildSignoffMarkdown, buildSignoffShareMessage, type SignoffInput } from "@/lib/clickup/signoff-markdown";
-import type { ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpSignoffDocPage } from "@/lib/clickup/types";
+import type { ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpSignoffPage } from "@/lib/clickup/types";
 
 export async function listSignoffSprintsAction(): Promise<{ ok: boolean; sprints: ClickUpSprint[]; error?: string }> {
   try {
@@ -57,9 +57,9 @@ export async function createSignoffAction(
   try {
     const content = buildSignoffMarkdown(input);
     const name = `${input.deploymentDate}`;
-    const doc = await createSignoffDoc(name, content);
+    const page = await createSignoffPage(name, content);
     revalidatePath("/sign-offs");
-    return { ok: true, url: doc.url };
+    return { ok: true, url: page.url };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not create sign-off doc" };
   }
@@ -74,33 +74,32 @@ export async function shareSignoffAction(sprintName: string, url: string): Promi
   }
 }
 
-export async function listSignoffDocsAction(cursor?: string): Promise<{ ok: boolean; result?: ClickUpSignoffDocPage; error?: string }> {
+export async function listSignoffPagesAction(): Promise<{ ok: boolean; pages: ClickUpSignoffPage[]; error?: string }> {
   try {
-    return { ok: true, result: await listSignoffDocs(cursor) };
+    return { ok: true, pages: await listSignoffPages() };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Could not load sign-off docs" };
+    return { ok: false, pages: [], error: e instanceof Error ? e.message : "Could not load sign-off docs" };
   }
 }
 
-export async function fetchSignoffDocContentAction(
-  docId: string,
-): Promise<{ ok: boolean; pageId?: string; content?: string; error?: string }> {
+export async function fetchSignoffPageContentAction(
+  pageId: string,
+): Promise<{ ok: boolean; content?: string; error?: string }> {
   try {
-    const page = await getSignoffDocPage(docId);
-    if (!page) return { ok: false, error: "No page found for this document" };
-    return { ok: true, pageId: page.pageId, content: page.content };
+    const content = await getSignoffPageContent(pageId);
+    if (content === null) return { ok: false, error: "No page found for this document" };
+    return { ok: true, content };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not load document content" };
   }
 }
 
-export async function saveSignoffDocContentAction(
-  docId: string,
+export async function saveSignoffPageContentAction(
   pageId: string,
   content: string,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    await updateSignoffDocPage(docId, pageId, content);
+    await updateSignoffPage(pageId, content);
     revalidatePath("/sign-offs");
     return { ok: true };
   } catch (e) {

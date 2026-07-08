@@ -1,4 +1,4 @@
-import type { ClickUpRawMessage, ClickUpPrItem, ClickUpPage, ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpSignoffDocPage } from "./types";
+import type { ClickUpRawMessage, ClickUpPrItem, ClickUpPage, ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpSignoffPage } from "./types";
 
 const PR_URL_RE = /https:\/\/github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)/g;
 const V2_BASE_URL = "https://api.clickup.com/api/v2";
@@ -165,40 +165,16 @@ export async function listSprintTasks(sprintListId: string): Promise<ClickUpSign
   }));
 }
 
-export async function createSignoffDoc(name: string, content: string): Promise<{ id: string; url: string }> {
-  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
-  const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
-  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
-  const docsFolderId = process.env.CLICKUP_SIGNOFF_DOCS_FOLDER_ID;
-  if (!token || !workspaceId || !docsFolderId) {
-    throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA, CLICKUP_WORKSPACE_ID, or CLICKUP_SIGNOFF_DOCS_FOLDER_ID");
-  }
+const SIGNOFF_DOC_NAME = "Deployment Sign-offs";
 
-  const docRes = await fetch(`${baseUrl}/workspaces/${workspaceId}/docs`, {
-    method: "POST",
-    headers: { Authorization: token, "Content-Type": "application/json" },
-    body: JSON.stringify({ name, parent: { id: docsFolderId, type: 5 }, create_page: false }),
-  });
-  if (!docRes.ok) {
-    const body = await docRes.text().catch(() => "");
-    throw new Error(`ClickUp API error ${docRes.status}: ${body.slice(0, 200)}`);
-  }
-  const doc = await docRes.json();
-
-  const pageRes = await fetch(`${baseUrl}/workspaces/${workspaceId}/docs/${doc.id}/pages`, {
-    method: "POST",
-    headers: { Authorization: token, "Content-Type": "application/json" },
-    body: JSON.stringify({ name, content, content_format: "text/md" }),
-  });
-  if (!pageRes.ok) {
-    const body = await pageRes.text().catch(() => "");
-    throw new Error(`ClickUp API error ${pageRes.status}: ${body.slice(0, 200)}`);
-  }
-
-  return { id: doc.id, url: `https://app.clickup.com/${workspaceId}/v/dc/${doc.id}` };
+interface SignoffClickUpConfig {
+  baseUrl: string;
+  token: string;
+  workspaceId: string;
+  docsFolderId: string;
 }
 
-export async function listSignoffDocs(cursor?: string): Promise<ClickUpSignoffDocPage> {
+function requireSignoffConfig(): SignoffClickUpConfig {
   const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
   const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
   const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
@@ -206,12 +182,16 @@ export async function listSignoffDocs(cursor?: string): Promise<ClickUpSignoffDo
   if (!token || !workspaceId || !docsFolderId) {
     throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA, CLICKUP_WORKSPACE_ID, or CLICKUP_SIGNOFF_DOCS_FOLDER_ID");
   }
+  return { baseUrl, token, workspaceId, docsFolderId };
+}
 
+// All sign-offs live as separate pages inside one dedicated doc (rather than one doc each).
+async function findSignoffDocId(config: SignoffClickUpConfig): Promise<string | null> {
+  const { baseUrl, token, workspaceId, docsFolderId } = config;
   const url = new URL(`${baseUrl}/workspaces/${workspaceId}/docs`);
   url.searchParams.set("parent_id", docsFolderId);
   url.searchParams.set("parent_type", "5");
-  url.searchParams.set("limit", "10");
-  if (cursor) url.searchParams.set("cursor", cursor);
+  url.searchParams.set("limit", "50");
 
   const res = await fetch(url.toString(), { headers: { Authorization: token }, cache: "no-store" });
   if (!res.ok) {
@@ -220,53 +200,104 @@ export async function listSignoffDocs(cursor?: string): Promise<ClickUpSignoffDo
   }
 
   const json = await res.json();
-  type RawDoc = { id: string; name: string; date_created: number; date_updated: number };
+  type RawDoc = { id: string; name: string };
   const docs: RawDoc[] = json.docs ?? [];
-  return {
-    docs: docs
-      .map((d) => ({
-        id: d.id,
-        name: d.name,
-        createdAt: new Date(Number(d.date_created)).toISOString(),
-        updatedAt: new Date(Number(d.date_updated)).toISOString(),
-        htmlUrl: `https://app.clickup.com/${workspaceId}/v/dc/${d.id}`,
-      }))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    nextCursor: json.next_cursor || null,
-  };
+  return docs.find((d) => d.name === SIGNOFF_DOC_NAME)?.id ?? null;
 }
 
-export async function getSignoffDocPage(docId: string): Promise<{ pageId: string; content: string } | null> {
-  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
-  const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
-  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
-  if (!token || !workspaceId) throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA or CLICKUP_WORKSPACE_ID");
+async function getOrCreateSignoffDocId(config: SignoffClickUpConfig): Promise<string> {
+  const existing = await findSignoffDocId(config);
+  if (existing) return existing;
 
-  const url = new URL(`${baseUrl}/workspaces/${workspaceId}/docs/${docId}/pages`);
-  url.searchParams.set("content_format", "text/md");
+  const { baseUrl, token, workspaceId, docsFolderId } = config;
+  const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/docs`, {
+    method: "POST",
+    headers: { Authorization: token, "Content-Type": "application/json" },
+    body: JSON.stringify({ name: SIGNOFF_DOC_NAME, parent: { id: docsFolderId, type: 5 }, create_page: false }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const doc = await res.json();
+  return doc.id;
+}
 
-  const res = await fetch(url.toString(), { headers: { Authorization: token }, cache: "no-store" });
+export async function createSignoffPage(name: string, content: string): Promise<{ id: string; url: string }> {
+  const config = requireSignoffConfig();
+  const docId = await getOrCreateSignoffDocId(config);
+
+  const res = await fetch(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages`, {
+    method: "POST",
+    headers: { Authorization: config.token, "Content-Type": "application/json" },
+    body: JSON.stringify({ name, content, content_format: "text/md" }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const page = await res.json();
+  return { id: page.id, url: `https://app.clickup.com/${config.workspaceId}/v/dc/${docId}/${page.id}` };
+}
+
+export async function listSignoffPages(): Promise<ClickUpSignoffPage[]> {
+  const config = requireSignoffConfig();
+  const docId = await findSignoffDocId(config);
+  if (!docId) return [];
+
+  const res = await fetch(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages`, {
+    headers: { Authorization: config.token },
+    cache: "no-store",
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
   }
 
+  const json = await res.json();
+  type RawPage = { id: string; name: string; date_created: number; date_updated: number };
+  const pages: RawPage[] = Array.isArray(json) ? json : [];
+  return pages
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      createdAt: new Date(Number(p.date_created)).toISOString(),
+      updatedAt: new Date(Number(p.date_updated)).toISOString(),
+      htmlUrl: `https://app.clickup.com/${config.workspaceId}/v/dc/${docId}/${p.id}`,
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function getSignoffPageContent(pageId: string): Promise<string | null> {
+  const config = requireSignoffConfig();
+  const docId = await findSignoffDocId(config);
+  if (!docId) return null;
+
+  const url = new URL(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages`);
+  url.searchParams.set("content_format", "text/md");
+
+  const res = await fetch(url.toString(), { headers: { Authorization: config.token }, cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
+  // ClickUp ignores the page_ids filter on this endpoint and always returns every page,
+  // so the match has to happen client-side.
   const json = await res.json();
   type RawPage = { id: string; content: string };
   const pages: RawPage[] = Array.isArray(json) ? json : [];
-  const page = pages[0];
-  return page ? { pageId: page.id, content: page.content } : null;
+  return pages.find((p) => p.id === pageId)?.content ?? null;
 }
 
-export async function updateSignoffDocPage(docId: string, pageId: string, content: string): Promise<void> {
-  const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
-  const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
-  const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
-  if (!token || !workspaceId) throw new Error("Missing CLICKUP_PERSONAL_TOKEN_ELRA or CLICKUP_WORKSPACE_ID");
+export async function updateSignoffPage(pageId: string, content: string): Promise<void> {
+  const config = requireSignoffConfig();
+  const docId = await findSignoffDocId(config);
+  if (!docId) throw new Error("Sign-off document not found");
 
-  const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/docs/${docId}/pages/${pageId}`, {
+  const res = await fetch(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages/${pageId}`, {
     method: "PUT",
-    headers: { Authorization: token, "Content-Type": "application/json" },
+    headers: { Authorization: config.token, "Content-Type": "application/json" },
     body: JSON.stringify({ content, content_format: "text/md" }),
   });
   if (!res.ok) {
