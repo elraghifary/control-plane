@@ -1,6 +1,6 @@
 {
   "name": "control-plane",
-  "version": "1.0.4",
+  "version": "1.0.10",
   "private": true,
   "scripts": {
     "dev": "next dev",
