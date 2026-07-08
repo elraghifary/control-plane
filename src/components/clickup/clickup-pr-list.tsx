@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { PullRequest } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,10 @@ export function ClickUpPrList({
   currentCursor?: string;
   currentUserGithubLogin?: string;
 }) {
+  const router = useRouter();
   const { navigate } = useNavigationLoading();
+  const [refreshing, startRefresh] = React.useTransition();
+  const hasPendingChecks = items.some(({ pr }) => pr.checksStatus === "pending");
 
   function buildUrl(cursor: string | undefined, history: string[]): string {
     const params = new URLSearchParams();
@@ -55,6 +59,14 @@ export function ClickUpPrList({
 
   return (
     <div className="space-y-4">
+      {hasPendingChecks && (
+        <div className="flex items-center justify-between rounded-lg border border-status-warn/30 bg-status-warn/10 px-3 py-2 text-xs text-status-warn">
+          <span>Some pull requests have checks still running.</span>
+          <Button size="xs" variant="outline" loading={refreshing} onClick={() => startRefresh(() => router.refresh())}>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </Button>
+        </div>
+      )}
       {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
           No GitHub pull request links found in this batch of messages.

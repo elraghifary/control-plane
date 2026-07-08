@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, GitPullRequest } from "lucide-react";
 import type { PullRequest, PullRequestListState, Repository } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,10 @@ export function PrList({
   selectedSlug: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { navigate } = useNavigationLoading();
+  const [refreshing, startRefresh] = React.useTransition();
+  const hasPendingChecks = pullRequests.some((pr) => pr.checksStatus === "pending");
 
   return (
     <div className="space-y-4">
@@ -43,6 +46,15 @@ export function PrList({
           <SyncStagingDialog repositories={repositories} selectedSlug={selectedSlug} />
         </div>
       </div>
+
+      {hasPendingChecks && (
+        <div className="flex items-center justify-between rounded-lg border border-status-warn/30 bg-status-warn/10 px-3 py-2 text-xs text-status-warn">
+          <span>Some pull requests have checks still running.</span>
+          <Button size="xs" variant="outline" loading={refreshing} onClick={() => startRefresh(() => router.refresh())}>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </Button>
+        </div>
+      )}
 
       <ButtonGroup>
         <Button
