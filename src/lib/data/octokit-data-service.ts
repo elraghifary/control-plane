@@ -5,7 +5,10 @@ import type {
   MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint,
   PullRequest, PullRequestReviewState, PullRequestReviewer, PullRequestStatus, StagingSyncResult, StagingCreateResult, StagingPrepareResult,
   PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, PullRequestChecksStatus, NewReviewComment,
+  WorkflowRunPage, WorkflowRun, WorkflowJob, WorkflowRunStatus, WorkflowRunConclusion,
 } from "./types";
+
+const WORKFLOW_RUNS_PER_PAGE = 15;
 
 function parseSlug(slug: string): { owner: string; repo: string } {
   const [owner, repo] = slug.split("/");
@@ -570,5 +573,104 @@ export class OctokitDataService implements DataService {
     });
     this.invalidateReleaseCache();
     return { tagName, htmlUrl: res.data.html_url };
+  }
+
+  async listWorkflowRuns(slug: string, page: number): Promise<WorkflowRunPage> {
+    const { owner, repo } = parseSlug(slug);
+    const res = await this.octokit.rest.actions.listWorkflowRunsForRepo({
+      owner, repo, per_page: WORKFLOW_RUNS_PER_PAGE, page,
+    });
+
+    // Multiple workflow files (CI, deploy, ...) triggered by the same commit share a
+    // head_sha — group them so the list shows one entry per PR/release/push, not per workflow.
+    const grouped = new Map<string, typeof res.data.workflow_runs>();
+    for (const r of res.data.workflow_runs) {
+      const list = grouped.get(r.head_sha) ?? [];
+      list.push(r);
+      grouped.set(r.head_sha, list);
+    }
+
+    const groups = await Promise.all([...grouped.entries()].map(async ([headSha, rawRuns]) => {
+      const first = rawRuns[0];
+      let refNumber: number | undefined;
+      let refUrl: string | undefined;
+      if ((first.event === "pull_request" || first.event === "pull_request_target") && first.head_branch) {
+        // The `pull_requests` field on workflow runs is unreliable (often empty even for
+        // pull_request-triggered runs), so look up the PR by head branch instead.
+        const pr = await this.octokit.rest.pulls
+          .list({ owner, repo, head: `${owner}:${first.head_branch}`, state: "all", sort: "created", direction: "desc", per_page: 1 })
+          .then((p) => p.data[0] ?? null)
+          .catch(() => null);
+        if (pr) { refNumber = pr.number; refUrl = pr.html_url; }
+      } else if (first.event === "release" && first.head_branch) {
+        refUrl = `https://github.com/${owner}/${repo}/releases/tag/${first.head_branch}`;
+      }
+
+      const runs: WorkflowRun[] = rawRuns.map((r) => ({
+        id: r.id,
+        name: r.name ?? "Workflow",
+        runNumber: r.run_number,
+        displayTitle: r.display_title,
+        status: r.status as WorkflowRunStatus,
+        conclusion: r.conclusion as WorkflowRunConclusion,
+        branch: r.head_branch ?? "",
+        event: r.event,
+        actor: r.actor?.login ?? "unknown",
+        actorAvatarUrl: r.actor?.avatar_url ?? undefined,
+        createdAt: r.created_at,
+        htmlUrl: r.html_url,
+        durationSeconds: r.status === "completed" && r.run_started_at
+          ? Math.max(0, Math.round((new Date(r.updated_at).getTime() - new Date(r.run_started_at).getTime()) / 1000))
+          : undefined,
+      }));
+
+      return {
+        key: headSha,
+        displayTitle: first.display_title,
+        refNumber,
+        refUrl,
+        branch: first.head_branch ?? "",
+        createdAt: runs.reduce((latest, r) => (r.createdAt > latest ? r.createdAt : latest), runs[0].createdAt),
+        actor: first.actor?.login ?? "unknown",
+        actorAvatarUrl: first.actor?.avatar_url ?? undefined,
+        runs,
+      };
+    }));
+
+    return { groups, totalCount: res.data.total_count };
+  }
+
+  async listWorkflowJobs(slug: string, runId: number): Promise<WorkflowJob[]> {
+    const { owner, repo } = parseSlug(slug);
+    const res = await this.octokit.rest.actions.listJobsForWorkflowRun({
+      owner, repo, run_id: runId, per_page: 100,
+    });
+    return res.data.jobs.map((j) => ({
+      id: j.id,
+      name: j.name,
+      status: j.status as WorkflowRunStatus,
+      conclusion: j.conclusion as WorkflowRunConclusion,
+      startedAt: j.started_at ?? null,
+      completedAt: j.completed_at ?? null,
+      htmlUrl: j.html_url ?? "",
+      steps: (j.steps ?? []).map((s) => ({
+        name: s.name,
+        number: s.number,
+        status: s.status as WorkflowRunStatus,
+        conclusion: s.conclusion as WorkflowRunConclusion,
+        startedAt: s.started_at ?? null,
+        completedAt: s.completed_at ?? null,
+      })),
+    }));
+  }
+
+  async rerunWorkflow(slug: string, runId: number): Promise<void> {
+    const { owner, repo } = parseSlug(slug);
+    await this.octokit.rest.actions.reRunWorkflow({ owner, repo, run_id: runId });
+  }
+
+  async rerunFailedJobs(slug: string, runId: number): Promise<void> {
+    const { owner, repo } = parseSlug(slug);
+    await this.octokit.rest.actions.reRunWorkflowFailedJobs({ owner, repo, run_id: runId });
   }
 }

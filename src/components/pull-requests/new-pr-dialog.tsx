@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, ExternalLink, ChevronRight } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -299,9 +299,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
                 <a href={result.htmlUrl} target="_blank" rel="noreferrer">
-                  <Button size="sm" variant="outline" className="gap-1.5">
-                    View on GitHub <ExternalLink className="h-3 w-3" />
-                  </Button>
+                  <Button size="sm" variant="outline">View On GitHub</Button>
                 </a>
                 <Button size="sm" className="" onClick={() => setOpen(false)}>Done</Button>
               </div>

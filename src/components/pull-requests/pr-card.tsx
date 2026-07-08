@@ -174,9 +174,7 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
               </Button>
             )}
             <a href={pr.htmlUrl} target="_blank" rel="noreferrer">
-              <Button size="sm" variant="outline" className="w-full">
-                GitHub
-              </Button>
+              <Button size="sm" variant="outline">GitHub</Button>
             </a>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import type { Repository, DashboardSummary, EnvironmentStatus, MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint, PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, NewReviewComment } from "./types";
+import type { Repository, DashboardSummary, EnvironmentStatus, MergeActivityPoint, ReleaseFrequencyPoint, DeploymentTimelinePoint, PullRequest, StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestListState, PullRequestFileChange, Release, PublishReleaseResult, NewReviewComment, WorkflowRunPage, WorkflowJob } from "./types";
 
 export type PullRequestReviewEvent = "APPROVE" | "REQUEST_CHANGES" | "COMMENT";
 
@@ -27,4 +27,8 @@ export interface DataService {
   listReleases(slug: string): Promise<Release[]>;
   generateReleaseNotes(slug: string, tagName: string, targetBranch: string, previousTag?: string): Promise<string>;
   publishRelease(slug: string, tagName: string, targetBranch: string, body: string): Promise<PublishReleaseResult>;
+  listWorkflowRuns(slug: string, page: number): Promise<WorkflowRunPage>;
+  listWorkflowJobs(slug: string, runId: number): Promise<WorkflowJob[]>;
+  rerunWorkflow(slug: string, runId: number): Promise<void>;
+  rerunFailedJobs(slug: string, runId: number): Promise<void>;
 }

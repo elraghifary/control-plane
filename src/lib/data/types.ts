@@ -126,3 +126,69 @@ export interface PullRequestFileChange {
   patch?: string;
   previousFilename?: string;
 }
+
+export type WorkflowRunStatus = "queued" | "in_progress" | "completed";
+export type WorkflowRunConclusion =
+  | "success"
+  | "failure"
+  | "cancelled"
+  | "skipped"
+  | "neutral"
+  | "timed_out"
+  | "action_required"
+  | "stale"
+  | null;
+
+export interface WorkflowRun {
+  id: number;
+  name: string;
+  runNumber: number;
+  displayTitle: string;
+  status: WorkflowRunStatus;
+  conclusion: WorkflowRunConclusion;
+  branch: string;
+  event: string;
+  actor: string;
+  actorAvatarUrl?: string;
+  createdAt: string;
+  htmlUrl: string;
+  durationSeconds?: number;
+}
+
+export interface WorkflowJobStep {
+  name: string;
+  number: number;
+  status: WorkflowRunStatus;
+  conclusion: WorkflowRunConclusion;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface WorkflowJob {
+  id: number;
+  name: string;
+  status: WorkflowRunStatus;
+  conclusion: WorkflowRunConclusion;
+  startedAt: string | null;
+  completedAt: string | null;
+  htmlUrl: string;
+  steps: WorkflowJobStep[];
+}
+
+/** Multiple workflows (e.g. CI + deploy) triggered by the same commit are grouped together. */
+export interface WorkflowRunGroup {
+  key: string;
+  displayTitle: string;
+  refNumber?: number;
+  refUrl?: string;
+  branch: string;
+  createdAt: string;
+  actor: string;
+  actorAvatarUrl?: string;
+  runs: WorkflowRun[];
+}
+
+export interface WorkflowRunPage {
+  groups: WorkflowRunGroup[];
+  totalCount: number;
+}

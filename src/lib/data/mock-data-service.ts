@@ -3,7 +3,7 @@ import { REPOSITORIES } from "./fixtures/repositories";
 import { summaryFor, envStatusesFor, mergeActivityFor, releaseFrequencyFor, deploymentTimelineFor } from "./fixtures/dashboard";
 import { pullRequestsFor } from "./fixtures/pull-requests";
 import { releasesFor } from "./fixtures/releases";
-import type { StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestListState, PublishReleaseResult } from "./types";
+import type { StagingSyncResult, StagingCreateResult, StagingPrepareResult, PullRequestListState, PublishReleaseResult, WorkflowRunPage, WorkflowJob } from "./types";
 
 export class MockDataService implements DataService {
   async listRepositories() { return [...REPOSITORIES]; }
@@ -75,4 +75,14 @@ export class MockDataService implements DataService {
   async publishRelease(slug: string, tagName: string, _targetBranch: string, _body: string): Promise<PublishReleaseResult> {
     return { tagName, htmlUrl: `https://github.com/${slug}/releases/tag/${tagName}` };
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async listWorkflowRuns(_slug: string, _page: number): Promise<WorkflowRunPage> {
+    return { groups: [], totalCount: 0 };
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async listWorkflowJobs(_slug: string, _runId: number): Promise<WorkflowJob[]> {
+    return [];
+  }
+  async rerunWorkflow() { /* no-op in mock */ }
+  async rerunFailedJobs() { /* no-op in mock */ }
 }
