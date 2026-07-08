@@ -191,7 +191,7 @@ export function ReleaseProductionDialog({ repoName, tags }: { repoName: string; 
           {step === "done" && (
             <>
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
-                <DialogTitle className="text-base">Production Release Results</DialogTitle>
+                <DialogTitle className="text-base">Release Production Results</DialogTitle>
               </DialogHeader>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
                 <div className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
