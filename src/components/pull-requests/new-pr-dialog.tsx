@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronsUpDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -208,37 +211,63 @@ function BranchCombobox({
 
 type Step = "form" | "creating" | "done";
 
+const newPrSchema = z
+  .object({
+    base: z.string().min(1, "Select a base branch"),
+    head: z.string().min(1, "Select a compare branch"),
+    title: z.string().min(1, "Title is required"),
+    body: z.string(),
+  })
+  .refine((data) => data.base !== data.head, {
+    message: "Base and compare must be different branches",
+    path: ["head"],
+  });
+
+type NewPrValues = z.infer<typeof newPrSchema>;
+
 export function NewPrDialog({ slug }: { slug: string }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<Step>("form");
   const [branches, setBranches] = React.useState<string[]>([]);
-  const [head, setHead] = React.useState("");
-  const [base, setBase] = React.useState("");
-  const [title, setTitle] = React.useState("");
-  const [body, setBody] = React.useState("");
   const [preview, setPreview] = React.useState(false);
   const [error, setError] = React.useState("");
   const [result, setResult] = React.useState<{ number: number; htmlUrl: string } | null>(null);
   const [diffFiles, setDiffFiles] = React.useState<PullRequestFileChange[]>([]);
   const [diffLoading, setDiffLoading] = React.useState(false);
-  const [branchTouched, setBranchTouched] = React.useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<NewPrValues>({
+    resolver: zodResolver(newPrSchema),
+    mode: "onChange",
+    defaultValues: { base: "", head: "", title: "", body: "" },
+  });
+
+  const base = watch("base");
+  const head = watch("head");
+  const title = watch("title");
+  const body = watch("body");
 
   async function handleOpen() {
     setStep("form");
-    setHead("");
-    setBase("");
-    setTitle("");
-    setBody("");
+    reset({ base: "", head: "", title: "", body: "" });
     setPreview(false);
     setError("");
     setResult(null);
     setDiffFiles([]);
-    setBranchTouched(false);
     setOpen(true);
     const b = await listBranchesAction(slug);
     setBranches(b);
-    if (b.includes("development")) { setBase("development"); setHead("development"); }
+    if (b.includes("development")) {
+      setValue("base", "development");
+      setValue("head", "development");
+    }
   }
 
   React.useEffect(() => {
@@ -254,11 +283,10 @@ export function NewPrDialog({ slug }: { slug: string }) {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [slug, head, base, open]);
 
-  async function handleSubmit() {
-    if (!head || !base || !title.trim()) return;
+  async function createPr(values: NewPrValues) {
     setError("");
     setStep("creating");
-    const res = await createPullRequestAction(slug, title.trim(), head, base, body);
+    const res = await createPullRequestAction(slug, values.title.trim(), values.head, values.base, values.body);
     if (res.ok && res.number && res.htmlUrl) {
       router.refresh();
       setResult({ number: res.number, htmlUrl: res.htmlUrl });
@@ -268,9 +296,6 @@ export function NewPrDialog({ slug }: { slug: string }) {
       setStep("form");
     }
   }
-
-  const sameBranch = !!head && !!base && head === base;
-  const canSubmit = !!head && !!base && !!title.trim() && !sameBranch;
 
   return (
     <>
@@ -315,27 +340,32 @@ export function NewPrDialog({ slug }: { slug: string }) {
 
                   <div>
                     <label className={fieldLabelCls}>Base</label>
-                    <BranchCombobox branches={branches} value={base} onChange={(v) => { setBase(v); setBranchTouched(true); }} placeholder="destination…" />
+                    <BranchCombobox branches={branches} value={base} onChange={(v) => setValue("base", v, { shouldValidate: true })} placeholder="destination…" />
+                    {errors.base && (
+                      <p className="mt-2 text-xs text-status-error">{errors.base.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <label className={cn(fieldLabelCls, "mb-0")}>Compare</label>
                     </div>
-                    <BranchCombobox branches={branches} value={head} onChange={(v) => { setHead(v); setBranchTouched(true); }} placeholder="source…" />
-                    {branchTouched && sameBranch && (
-                      <p className="mt-2 text-xs text-status-error">Base and compare must be different branches.</p>
+                    <BranchCombobox branches={branches} value={head} onChange={(v) => setValue("head", v, { shouldValidate: true })} placeholder="source…" />
+                    {errors.head && (
+                      <p className="mt-2 text-xs text-status-error">{errors.head.message}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className={fieldLabelCls}>Title *</label>
+                    <label className={fieldLabelCls}>Title</label>
                     <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
                       placeholder="Title"
                       className="bg-card/40"
+                      {...register("title")}
                     />
+                    {errors.title && (
+                      <p className="mt-2 text-xs text-status-error">{errors.title.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -366,11 +396,10 @@ export function NewPrDialog({ slug }: { slug: string }) {
                       </div>
                     ) : (
                       <Textarea
-                        value={body}
-                        onChange={(e) => setBody(e.target.value)}
                         placeholder="Add your description here…"
                         rows={6}
                         className="bg-card/40"
+                        {...register("body")}
                       />
                     )}
                   </div>
@@ -390,7 +419,7 @@ export function NewPrDialog({ slug }: { slug: string }) {
                 <Button size="sm" variant="outline" onClick={() => setOpen(false)} disabled={step === "creating"}>
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} loading={step === "creating"}>
+                <Button size="sm" onClick={handleSubmit(createPr)} loading={step === "creating"}>
                   {step === "creating" ? "Creating…" : "Create"}
                 </Button>
               </div>

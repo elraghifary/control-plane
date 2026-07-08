@@ -43,11 +43,11 @@ export function WorkflowRunCard({ slug, run, contextLabel }: { slug: string; run
   const failed = isFailedRun(run.status, run.conclusion);
   const rerunActions = run.status === "completed" && (
     <div className="ml-auto flex shrink-0 gap-1.5">
-      <Button variant="outline" size="xs" loading={rerunning === "all"} disabled={rerunning !== null} onClick={() => rerun("all")}>
+      <Button variant="outline" size="xs" className="hover:border-instrument/40 hover:text-instrument" loading={rerunning === "all"} disabled={rerunning !== null} onClick={() => rerun("all")}>
         {rerunning === "all" ? "Rerunning…" : "Rerun"}
       </Button>
       {failed && (
-        <Button size="xs" loading={rerunning === "failed"} disabled={rerunning !== null} onClick={() => rerun("failed")}>
+        <Button variant="outline" size="xs" className="hover:border-instrument/40 hover:text-instrument" loading={rerunning === "failed"} disabled={rerunning !== null} onClick={() => rerun("failed")}>
           {rerunning === "failed" ? "Rerunning…" : "Rerun Failed Jobs"}
         </Button>
       )}

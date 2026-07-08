@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { GitPullRequest } from "lucide-react";
@@ -37,6 +40,12 @@ function parseLinkedPrs(body: string): Array<{ slug: string; number: number }> {
   return result;
 }
 
+const commentSchema = z.object({
+  comment: z.string().min(1, "Comment is required"),
+});
+
+type CommentValues = z.infer<typeof commentSchema>;
+
 export function ReviewDialog({
   pr,
   open,
@@ -53,10 +62,17 @@ export function ReviewDialog({
   const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
   const [commentOpen, setCommentOpen] = React.useState(false);
-  const [commentText, setCommentText] = React.useState("");
   const [commentPreview, setCommentPreview] = React.useState(false);
-  const [commentSubmitting, setCommentSubmitting] = React.useState(false);
   const [merging, setMerging] = React.useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { isSubmitting: commentSubmitting },
+  } = useForm<CommentValues>({ resolver: zodResolver(commentSchema), defaultValues: { comment: "" } });
+  const commentText = watch("comment");
 
   React.useEffect(() => {
     if (open) React.startTransition(() => { setError(null); setCommentOpen(false); });
@@ -81,28 +97,25 @@ export function ReviewDialog({
   }
 
   function openComment() {
-    setCommentText("");
+    reset({ comment: "" });
     setCommentPreview(false);
     setCommentOpen(true);
   }
 
-  async function submitComment() {
-    if (!pr || !commentText.trim()) return;
-    setCommentSubmitting(true);
-    const res = await submitReview(pr.slug, pr.number, "COMMENT", commentText);
+  async function submitComment(values: CommentValues) {
+    if (!pr) return;
+    const res = await submitReview(pr.slug, pr.number, "COMMENT", values.comment);
     if (!res.ok) {
-      setCommentSubmitting(false);
       toast.error(res.error ?? "Could not submit comment");
       return;
     }
     if (clickupMessageId) {
-      const clickupContent = `💬 Comment by ${currentUserGithubLogin ?? "unknown"}:\n${commentText}`;
+      const clickupContent = `💬 Comment by ${currentUserGithubLogin ?? "unknown"}:\n${values.comment}`;
       const clickupRes = await sendClickUpReplyAction(clickupMessageId, clickupContent);
       if (!clickupRes.ok) {
         toast.error(`Commented on GitHub, but ClickUp reply failed: ${clickupRes.error ?? "unknown error"}`);
       }
     }
-    setCommentSubmitting(false);
     setCommentOpen(false);
     toast.success("Comment submitted");
     router.refresh();
@@ -164,11 +177,10 @@ export function ReviewDialog({
             </div>
           ) : (
             <Textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
               placeholder="Leave a comment…"
               rows={10}
               className="bg-card/40"
+              {...register("comment")}
             />
           )}
         </div>
@@ -190,7 +202,7 @@ export function ReviewDialog({
               <Button variant="outline" size="sm" className="" onClick={() => setCommentOpen(false)}>
                 Cancel
               </Button>
-              <Button size="sm" className="" loading={commentSubmitting} disabled={!commentText.trim()} onClick={submitComment}>
+              <Button size="sm" className="" loading={commentSubmitting} disabled={!commentText.trim()} onClick={handleSubmit(submitComment)}>
                 {commentSubmitting ? "Submitting…" : "Comment"}
               </Button>
             </>

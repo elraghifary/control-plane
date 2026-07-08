@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,6 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { inviteUserAction, updateUserAdminAction, deleteUserAction } from "./actions";
 import { copyToClipboard } from "@/lib/utils";
+
+const inviteSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Enter a valid email"),
+});
+
+type InviteValues = z.infer<typeof inviteSchema>;
 
 export interface SettingsUser {
   id: string;
@@ -25,28 +34,32 @@ function formatJoined(iso: string) {
 function InviteDialog() {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  const [email, setEmail] = React.useState("");
-  const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [link, setLink] = React.useState<string | null>(null);
+  const [invitedEmail, setInvitedEmail] = React.useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<InviteValues>({ resolver: zodResolver(inviteSchema), defaultValues: { email: "" } });
 
   function handleOpen() {
-    setEmail("");
+    reset({ email: "" });
     setError(null);
     setLink(null);
     setOpen(true);
   }
 
-  async function invite() {
-    setPending(true);
+  async function invite(values: InviteValues) {
     setError(null);
-    const res = await inviteUserAction(email);
-    setPending(false);
+    const res = await inviteUserAction(values.email);
     if (!res.ok || !res.token) {
       setError(res.error ?? "Could not create invite.");
       return;
     }
     setLink(`${window.location.origin}/invite/${res.token}`);
+    setInvitedEmail(values.email.trim().toLowerCase());
     router.refresh();
   }
 
@@ -67,30 +80,30 @@ function InviteDialog() {
           </DialogHeader>
 
           {!link ? (
-            <>
+            <form onSubmit={handleSubmit(invite)}>
               <div className="px-5 py-5">
                 <label className="mb-3 block text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</label>
                 <Input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="teammate@happykids.id"
                   autoFocus
+                  {...register("email")}
                 />
+                {errors.email && <p className="mt-2 text-xs text-status-error">{errors.email.message}</p>}
                 {error && <p className="mt-2 text-xs text-status-error">{error}</p>}
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button size="sm" loading={pending} disabled={!email.trim()} onClick={invite}>
-                  {pending ? "Generating…" : "Generate Invite Link"}
+                <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button type="submit" size="sm" loading={isSubmitting}>
+                  {isSubmitting ? "Generating…" : "Generate Invite Link"}
                 </Button>
               </div>
-            </>
+            </form>
           ) : (
             <>
               <div className="space-y-3 px-5 py-5">
                 <p className="text-sm text-muted-foreground">
-                  Share this link with <span className="text-foreground">{email.trim().toLowerCase()}</span>. It expires in 7 days.
+                  Share this link with <span className="text-foreground">{invitedEmail}</span>. It expires in 7 days.
                 </p>
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2">
                   <span className="min-w-0 flex-1 truncate text-xs">{link}</span>
@@ -118,7 +131,7 @@ function RemoveUserDialog({ user, onConfirm }: { user: SettingsUser; onConfirm: 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Remove user</DialogTitle>
+            <DialogTitle>Remove User</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Remove <span className="font-medium text-foreground">{user.email}</span>? They will lose access immediately.

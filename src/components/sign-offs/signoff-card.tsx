@@ -30,9 +30,9 @@ export function SignoffCard({ doc, onEdit }: { doc: ClickUpSignoffPage; onEdit: 
           </div>
         </div>
         <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-stretch">
-          <Button size="sm" variant="outline" onClick={onEdit}>Edit</Button>
-          <a href={doc.htmlUrl} target="_blank" rel="noreferrer">
-            <Button size="sm" variant="outline">ClickUp</Button>
+          <Button size="sm" variant="outline" className="hover:border-instrument/40 hover:text-instrument" onClick={onEdit}>Edit</Button>
+          <a href={doc.htmlUrl} target="_blank" rel="noreferrer" className="sm:w-full">
+            <Button size="sm" variant="outline" className="sm:w-full">ClickUp</Button>
           </a>
         </div>
       </div>

@@ -97,3 +97,4 @@ All multi-step dialogs follow this structure:
 - No need to commit and deploy every question or task
 - Use capitalize for button name e.g. Confirm action become Confirm Action
 - Update the package.json version before deploy
+- Do not run Claude Chrome or the preview server until I instruct you to do so

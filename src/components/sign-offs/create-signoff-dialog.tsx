@@ -2,6 +2,9 @@
 
 import * as React from "react";
 import { Fragment } from "react";
+import { z } from "zod";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Calendar as CalendarIcon, Check, ChevronsUpDown, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,6 +93,34 @@ function sortSprintsLatestFirst(sprints: ClickUpSprint[]): ClickUpSprint[] {
 }
 
 const fieldLabelCls = "mb-3 block text-xs font-medium uppercase tracking-wide text-muted-foreground";
+
+const picSchema = z.object({ name: z.string(), email: z.string().min(1, "PIC is required") });
+
+const serviceRowSchema = z.object({
+  repoSlug: z.string(),
+  service: z.string().min(1, "Service name is required"),
+  latestTag: z.string().nullable(),
+  tagLoading: z.boolean(),
+  version: z.string().min(1, "Version is required"),
+  type: z.string(),
+  pic: picSchema,
+});
+
+const taskRowSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+  assigneeEmails: z.array(z.string()),
+});
+
+const signoffFormSchema = z.object({
+  sprintName: z.string().min(1, "Select a sprint"),
+  deploymentDate: z.string().min(1, "Select a deployment date"),
+  services: z.array(serviceRowSchema).min(1),
+  tasks: z.array(taskRowSchema),
+  notes: z.string(),
+});
+
+type SignoffFormValues = z.infer<typeof signoffFormSchema>;
 
 function SprintCombobox({
   sprints,
@@ -401,25 +432,52 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
     return [...members.map((m) => ({ value: m.email, label: m.name })), ...extra];
   }
 
-  const [deploymentDate, setDeploymentDate] = React.useState(today());
-  const [services, setServices] = React.useState<ServiceRow[]>([emptyServiceRow()]);
-  const [tasks, setTasks] = React.useState<SignoffTaskRow[]>([]);
   const [tasksLoading, setTasksLoading] = React.useState(false);
-  const [notes, setNotes] = React.useState("");
 
   const [error, setError] = React.useState<string | null>(null);
   const [resultUrl, setResultUrl] = React.useState<string | null>(null);
   const [sharing, setSharing] = React.useState(false);
   const [shared, setShared] = React.useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    getValues,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<SignoffFormValues>({
+    resolver: zodResolver(signoffFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      sprintName: "",
+      deploymentDate: today(),
+      services: [emptyServiceRow()],
+      tasks: [],
+      notes: "",
+    },
+  });
+
+  const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({ control, name: "services" });
+  const { fields: taskFields, append: appendTask, remove: removeTask, replace: replaceTasks } = useFieldArray({ control, name: "tasks" });
+
+  const deploymentDate = watch("deploymentDate");
+  const services = watch("services");
+  const tasks = watch("tasks");
+
   function handleOpen() {
     setStep("form");
     setSubmitting(false);
     setSelectedSprint(null);
-    setDeploymentDate(today());
-    setServices([emptyServiceRow()]);
-    setTasks([]);
-    setNotes("");
+    reset({
+      sprintName: "",
+      deploymentDate: today(),
+      services: [emptyServiceRow()],
+      tasks: [],
+      notes: "",
+    });
     setError(null);
     setResultUrl(null);
     setSharing(false);
@@ -440,20 +498,18 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
 
   async function selectSprint(sprint: ClickUpSprint) {
     setSelectedSprint(sprint);
+    setValue("sprintName", sprint.name, { shouldValidate: true });
     setTasksLoading(true);
     const res = await listSignoffTasksAction(sprint.id);
     setTasksLoading(false);
-    if (res.ok) setTasks(res.tasks.map((t) => ({ name: t.name, url: t.url, assigneeEmails: t.assigneeEmails })));
+    if (res.ok) replaceTasks(res.tasks.map((t) => ({ name: t.name, url: t.url, assigneeEmails: t.assigneeEmails })));
   }
 
   function updateService(index: number, patch: Partial<ServiceRow>) {
-    setServices((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+    setValue(`services.${index}`, { ...getValues(`services.${index}`), ...patch }, { shouldValidate: true });
   }
   function addService() {
-    setServices((prev) => [...prev, emptyServiceRow()]);
-  }
-  function removeService(index: number) {
-    setServices((prev) => prev.filter((_, i) => i !== index));
+    appendService(emptyServiceRow());
   }
 
   async function selectServiceRepo(index: number, repo: Repository) {
@@ -463,32 +519,26 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
   }
 
   function updateTask(index: number, patch: Partial<SignoffTaskRow>) {
-    setTasks((prev) => prev.map((t, i) => (i === index ? { ...t, ...patch } : t)));
+    setValue(`tasks.${index}`, { ...getValues(`tasks.${index}`), ...patch }, { shouldValidate: true });
   }
   function addTask() {
-    setTasks((prev) => [...prev, { name: "", url: "", assigneeEmails: [] }]);
-  }
-  function removeTask(index: number) {
-    setTasks((prev) => prev.filter((_, i) => i !== index));
+    appendTask({ name: "", url: "", assigneeEmails: [] });
   }
 
-  const canSubmit = !!selectedSprint && services.every((s) => s.service.trim() && s.version.trim() && s.pic.email);
-
-  async function submit() {
-    if (!selectedSprint || !canSubmit) return;
+  async function submit(values: SignoffFormValues) {
     setError(null);
     setSubmitting(true);
     const res = await createSignoffAction({
-      deploymentDate: formatSignoffDate(deploymentDate),
-      sprintName: selectedSprint.name,
-      services: services.map((s) => ({ service: s.service, version: s.version, type: s.type, pic: s.pic })),
-      tasks,
-      qaMembers: [{ ...QA_MEMBER, date: formatSignoffDate(deploymentDate) }],
-      productMembers: [{ ...PRODUCT_MEMBER, date: formatSignoffDate(deploymentDate) }],
+      deploymentDate: formatSignoffDate(values.deploymentDate),
+      sprintName: values.sprintName,
+      services: values.services.map((s) => ({ service: s.service, version: s.version, type: s.type, pic: s.pic })),
+      tasks: values.tasks,
+      qaMembers: [{ ...QA_MEMBER, date: formatSignoffDate(values.deploymentDate) }],
+      productMembers: [{ ...PRODUCT_MEMBER, date: formatSignoffDate(values.deploymentDate) }],
       postDeployExecuted: false,
       postDeploySmokeTest: false,
       postDeployMonitoring: false,
-      notes,
+      notes: values.notes,
       contact: SIGNOFF_CONTACT,
     });
     setSubmitting(false);
@@ -538,10 +588,12 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                   <div>
                     <label className={fieldLabelCls}>Sprint</label>
                     <SprintCombobox sprints={sprints} value={selectedSprint} onChange={selectSprint} loading={sprintsLoading} error={sprintsError} />
+                    {errors.sprintName && <p className="mt-1.5 text-xs text-status-error">{errors.sprintName.message}</p>}
                   </div>
                   <div>
                     <label className={fieldLabelCls}>Deployment Date</label>
-                    <DatePicker value={deploymentDate} onChange={setDeploymentDate} />
+                    <DatePicker value={deploymentDate} onChange={(v) => setValue("deploymentDate", v, { shouldValidate: true })} />
+                    {errors.deploymentDate && <p className="mt-1.5 text-xs text-status-error">{errors.deploymentDate.message}</p>}
                   </div>
                 </div>
 
@@ -552,8 +604,10 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                     <Button size="xs" variant="outline" onClick={addService}><Plus className="h-3 w-3" /> Add Service</Button>
                   </div>
                   <div className="space-y-3">
-                    {services.map((s, i) => (
-                      <div key={i} className="grid grid-cols-1 items-center gap-2 rounded-lg border border-border bg-card/40 p-3 sm:grid-cols-[1.5fr_1.3fr_1fr_1.5fr_auto]">
+                    {serviceFields.map((field, i) => {
+                      const s = services[i];
+                      return (
+                      <div key={field.id} className="grid grid-cols-1 items-center gap-2 rounded-lg border border-border bg-card/40 p-3 sm:grid-cols-[1.5fr_1.3fr_1fr_1.5fr_auto]">
                         <RepoCombobox repositories={repositories} value={s.repoSlug} onChange={(repo) => selectServiceRepo(i, repo)} />
                         <OptionCombobox
                           value={s.version}
@@ -581,7 +635,15 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    ))}
+                      );
+                    })}
+                    {Array.isArray(errors.services) && errors.services.map((rowError, i) => {
+                      const message = rowError?.service?.message ?? rowError?.version?.message ?? rowError?.pic?.email?.message;
+                      if (!message) return null;
+                      return (
+                        <p key={i} className="text-xs text-status-error">Service #{i + 1}: {message}</p>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -596,10 +658,12 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                   ) : (
                     <div className="space-y-3">
                       {tasks.length === 0 && <p className="text-xs text-muted-foreground">No tasks found for this sprint.</p>}
-                      {tasks.map((t, i) => (
-                        <div key={i} className="grid grid-cols-1 items-center gap-2 rounded-lg border border-border bg-card/40 p-3 sm:grid-cols-[2fr_2fr_1.5fr_auto]">
-                          <Input placeholder="Task name" value={t.name} onChange={(e) => updateTask(i, { name: e.target.value })} />
-                          <Input placeholder="Task URL" value={t.url} onChange={(e) => updateTask(i, { url: e.target.value })} />
+                      {taskFields.map((field, i) => {
+                        const t = tasks[i];
+                        return (
+                        <div key={field.id} className="grid grid-cols-1 items-center gap-2 rounded-lg border border-border bg-card/40 p-3 sm:grid-cols-[2fr_2fr_1.5fr_auto]">
+                          <Input placeholder="Task name" {...register(`tasks.${i}.name`)} />
+                          <Input placeholder="Task URL" {...register(`tasks.${i}.url`)} />
                           <MultiSelectCombobox
                             options={assigneeOptions(t.assigneeEmails)}
                             values={t.assigneeEmails}
@@ -610,7 +674,8 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -625,14 +690,14 @@ export function CreateSignoffDialog({ repositories }: { repositories: Repository
                 {/* Notes */}
                 <div>
                   <label className={fieldLabelCls}>Note / Remarks</label>
-                  <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Optional additional comments, follow-up tasks, or known issues." />
+                  <Textarea rows={3} placeholder="Optional additional comments, follow-up tasks, or known issues." {...register("notes")} />
                 </div>
 
                 {error && <p className="text-xs text-status-error">{error}</p>}
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
                 <Button variant="outline" size="sm" disabled={submitting} onClick={() => setOpen(false)}>Cancel</Button>
-                <Button size="sm" disabled={!canSubmit} loading={submitting} onClick={submit}>
+                <Button size="sm" loading={submitting} onClick={handleSubmit(submit)}>
                   {submitting ? "Creating…" : "Create"}
                 </Button>
               </div>

@@ -12,9 +12,9 @@ const ROUTES = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/pull-requests", label: "Pull Requests", icon: GitPullRequest },
   { href: "/releases", label: "Releases", icon: Tag },
-  { href: "/sign-offs", label: "Sign-offs", icon: FileCheck2 },
   { href: "/actions", label: "Actions", icon: PlayCircle },
   { href: "/clickup/pull-requests", label: "ClickUp Pull Requests", icon: MessagesSquare },
+  { href: "/sign-offs", label: "Sign-offs", icon: FileCheck2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

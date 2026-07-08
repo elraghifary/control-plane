@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -13,6 +16,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 type BumpType = "minor" | "patch";
 type Step = "form" | "confirm" | "done";
+
+const publishSchema = z.object({
+  bump: z.enum(["minor", "patch"]),
+  branch: z.string().min(1, "Select a target branch"),
+  syncMain: z.boolean(),
+  notes: z.string(),
+});
+
+type PublishValues = z.infer<typeof publishSchema>;
 
 function bumpVersion(latestTag: string | null, bump: BumpType): string {
   if (!latestTag) return bump === "minor" ? "v1.0.0" : "v0.0.1";
@@ -37,29 +49,38 @@ export function PublishReleaseDialog({
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<Step>("form");
-  const [bump, setBump] = React.useState<BumpType>("minor");
-  const [branch, setBranch] = React.useState(defaultBranch);
   const [branchQuery, setBranchQuery] = React.useState("");
   const [branchPopoverOpen, setBranchPopoverOpen] = React.useState(false);
   const [branches, setBranches] = React.useState<string[]>([]);
-  const [notes, setNotes] = React.useState("");
   const [notesLoading, setNotesLoading] = React.useState(false);
   const lastGeneratedNotes = React.useRef("");
-  const [syncMain, setSyncMain] = React.useState(false);
   const [publishResult, setPublishResult] = React.useState<{ tagName: string; htmlUrl: string } | null>(null);
   const [publishError, setPublishError] = React.useState<string | null>(null);
   const [publishing, setPublishing] = React.useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    getValues,
+    formState: { errors },
+  } = useForm<PublishValues>({
+    resolver: zodResolver(publishSchema),
+    defaultValues: { bump: "minor", branch: defaultBranch, syncMain: false, notes: "" },
+  });
+
+  const bump = watch("bump");
+  const branch = watch("branch");
+  const syncMain = watch("syncMain");
   const computedTag = bumpVersion(latestTag, bump);
 
   function handleOpen() {
     setStep("form");
-    setBump("minor");
-    setBranch(defaultBranch);
+    reset({ bump: "minor", branch: defaultBranch, syncMain: false, notes: "" });
     setBranchQuery("");
-    setNotes("");
     lastGeneratedNotes.current = "";
-    setSyncMain(false);
     setPublishResult(null);
     setPublishError(null);
     setPublishing(false);
@@ -79,7 +100,7 @@ export function PublishReleaseDialog({
       const generated = await generateReleaseNotesAction(slug, computedTag, branch, latestTag ?? undefined);
       if (!cancelled) {
         lastGeneratedNotes.current = generated;
-        setNotes(generated);
+        setValue("notes", generated);
         setNotesLoading(false);
       }
     }, 300);
@@ -87,12 +108,17 @@ export function PublishReleaseDialog({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, step, computedTag, branch]);
 
+  function goToConfirm() {
+    setStep("confirm");
+  }
+
   async function publish() {
     setPublishError(null);
     setPublishing(true);
 
-    let finalNotes = notes;
-    if (syncMain) {
+    const values = getValues();
+    let finalNotes = values.notes;
+    if (values.syncMain) {
       const syncRes = await syncMainAction(slug);
       if (!syncRes.ok) {
         setPublishing(false);
@@ -101,13 +127,13 @@ export function PublishReleaseDialog({
       }
       // The merge above can add commits to `branch` that weren't reflected when
       // notes were first generated — refresh them, unless the user edited by hand.
-      if (notes === lastGeneratedNotes.current) {
-        finalNotes = await generateReleaseNotesAction(slug, computedTag, branch, latestTag ?? undefined);
-        setNotes(finalNotes);
+      if (values.notes === lastGeneratedNotes.current) {
+        finalNotes = await generateReleaseNotesAction(slug, computedTag, values.branch, latestTag ?? undefined);
+        setValue("notes", finalNotes);
       }
     }
 
-    const res = await publishReleaseAction(slug, computedTag, branch, finalNotes);
+    const res = await publishReleaseAction(slug, computedTag, values.branch, finalNotes);
     if (res.ok && res.result) {
       router.refresh();
       React.startTransition(() => {
@@ -142,7 +168,7 @@ export function PublishReleaseDialog({
                 )}
               </DialogHeader>
 
-              <div className="relative min-h-0 flex-1 flex flex-col">
+              <form onSubmit={handleSubmit(goToConfirm)} className="relative min-h-0 flex-1 flex flex-col">
                 {/* Overlay sits here — outside overflow-y-auto so inset-0 covers the visible box */}
                 {notesLoading && (
                   <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -158,7 +184,8 @@ export function PublishReleaseDialog({
                     {(["minor", "patch"] as BumpType[]).map((b) => (
                       <button
                         key={b}
-                        onClick={() => setBump(b)}
+                        type="button"
+                        onClick={() => setValue("bump", b)}
                         className={[
                           "flex-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
                           bump === b
@@ -180,7 +207,7 @@ export function PublishReleaseDialog({
                   <label className={fieldLabelCls}>Target branch</label>
                   <Popover modal open={branchPopoverOpen} onOpenChange={(v) => { setBranchPopoverOpen(v); if (!v) setBranchQuery(""); }}>
                     <PopoverTrigger asChild>
-                      <button className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
+                      <button type="button" className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
                         <span className={cn("min-w-0 flex-1 truncate text-left", !branch && "text-muted-foreground")}>
                           {branch || "Select branch…"}
                         </span>
@@ -204,7 +231,8 @@ export function PublishReleaseDialog({
                         {filteredBranches.map((b) => (
                           <button
                             key={b}
-                            onClick={() => { setBranch(b); setBranchQuery(""); setBranchPopoverOpen(false); }}
+                            type="button"
+                            onClick={() => { setValue("branch", b, { shouldValidate: true }); setBranchQuery(""); setBranchPopoverOpen(false); }}
                             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
                           >
                             <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", branch !== b && "opacity-0")} />
@@ -213,7 +241,8 @@ export function PublishReleaseDialog({
                         ))}
                         {filteredBranches.length === 0 && branchQuery && (
                           <button
-                            onClick={() => { setBranch(branchQuery); setBranchQuery(""); setBranchPopoverOpen(false); }}
+                            type="button"
+                            onClick={() => { setValue("branch", branchQuery, { shouldValidate: true }); setBranchQuery(""); setBranchPopoverOpen(false); }}
                             className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
                           >
                             Use &ldquo;<span>{branchQuery}</span>&rdquo;
@@ -222,6 +251,7 @@ export function PublishReleaseDialog({
                       </div>
                     </PopoverContent>
                   </Popover>
+                  {errors.branch && <p className="mt-1.5 text-xs text-status-error">{errors.branch.message}</p>}
                 </div>
 
                 {/* Sync Main */}
@@ -229,8 +259,7 @@ export function PublishReleaseDialog({
                   <input
                     type="checkbox"
                     className="mt-0.5 h-4 w-4 rounded accent-instrument"
-                    checked={syncMain}
-                    onChange={(e) => setSyncMain(e.target.checked)}
+                    {...register("syncMain")}
                   />
                   <div>
                     <p className="text-sm font-medium">Sync Main</p>
@@ -244,27 +273,21 @@ export function PublishReleaseDialog({
                 <div>
                   <label className={fieldLabelCls}>Release notes</label>
                   <Textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
                     rows={8}
                     className="bg-card/50 text-xs"
                     placeholder="Release notes will be auto-generated…"
+                    {...register("notes")}
                   />
                 </div>
               </div>{/* end scroll */}
 
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button
-                  size="sm"
-                  className=""
-                  disabled={notesLoading || !branch.trim()}
-                  onClick={() => setStep("confirm")}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button type="submit" size="sm" disabled={notesLoading}>
                   Release
                 </Button>
               </div>
-              </div>{/* end relative wrapper */}
+              </form>
             </>
           )}
 

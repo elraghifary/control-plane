@@ -62,7 +62,7 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
   return (
     <>
       <article className="rounded-xl border border-border/70 bg-card/50 p-4 backdrop-blur transition-colors hover:border-instrument/30">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="min-w-0 flex-1 space-y-2.5">
             {showRepo && (
               <div className="space-y-1">
@@ -173,8 +173,8 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
                 Reopen
               </Button>
             )}
-            <a href={pr.htmlUrl} target="_blank" rel="noreferrer">
-              <Button size="sm" variant="outline">GitHub</Button>
+            <a href={pr.htmlUrl} target="_blank" rel="noreferrer" className="sm:w-full">
+              <Button size="sm" variant="outline" className="sm:w-full">GitHub</Button>
             </a>
           </div>
         </div>
@@ -189,7 +189,7 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
       <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Close pull request</DialogTitle>
+            <DialogTitle>Close Pull Request</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Close <span className="font-medium text-foreground">#{pr.number} {pr.title}</span>? This can be reopened later.
@@ -197,7 +197,7 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
           <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">
             <Button variant="outline" size="sm" className="" onClick={() => setCloseDialogOpen(false)}>Cancel</Button>
             <Button size="sm" className="border-status-error/40 bg-status-error/10 text-status-error hover:bg-status-error/20" onClick={close}>
-              Close pull request
+              Close Pull Request
             </Button>
           </div>
         </DialogContent>
@@ -205,7 +205,7 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
       <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Reopen pull request</DialogTitle>
+            <DialogTitle>Reopen Pull Request</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Reopen <span className="font-medium text-foreground">#{pr.number} {pr.title}</span>?
@@ -213,7 +213,7 @@ export function PrCard({ pr, state, showRepo, clickupUser, clickupMessageId, cur
           <div className="flex justify-end gap-2 px-5 py-4 border-t border-border">
             <Button variant="outline" size="sm" className="" onClick={() => setReopenDialogOpen(false)}>Cancel</Button>
             <Button size="sm" className="border-status-healthy/40 bg-status-healthy/10 text-status-healthy hover:bg-status-healthy/20" onClick={reopen}>
-              Reopen pull request
+              Reopen Pull Request
             </Button>
           </div>
         </DialogContent>

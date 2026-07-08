@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ExternalLink } from "lucide-react";
 import type { Repository } from "@/lib/data/types";
 import type { StagingCreateResult } from "@/lib/data/types";
@@ -15,6 +18,12 @@ import { prepareStagingPR, mergePullRequest } from "@/app/(app)/pull-requests/ac
 
 type Step = "select" | "confirm" | "done";
 
+const syncSchema = z.object({
+  slugs: z.array(z.string()).min(1, "Select at least one repository"),
+});
+
+type SyncValues = z.infer<typeof syncSchema>;
+
 export function SyncStagingDialog({
   repositories,
   selectedSlug,
@@ -24,13 +33,27 @@ export function SyncStagingDialog({
 }) {
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<Step>("select");
-  const [checked, setChecked] = React.useState<Set<string>>(new Set());
   const [results, setResults] = React.useState<StagingCreateResult[]>([]);
   const [syncing, setSyncing] = React.useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<SyncValues>({
+    resolver: zodResolver(syncSchema),
+    defaultValues: { slugs: [] },
+  });
+
+  const slugs = watch("slugs");
+  const checked = new Set(slugs);
+
   function handleOpen() {
     setStep("select");
-    setChecked(new Set([selectedSlug].filter(Boolean)));
+    reset({ slugs: [selectedSlug].filter(Boolean) });
     setResults([]);
     setSyncing(false);
     setOpen(true);
@@ -44,24 +67,18 @@ export function SyncStagingDialog({
   const someChecked = repositories.some((r) => checked.has(r.slug));
 
   function toggleAll(value: boolean) {
-    setChecked(value ? new Set(repositories.map((r) => r.slug)) : new Set());
+    setValue("slugs", value ? repositories.map((r) => r.slug) : [], { shouldValidate: true });
   }
 
-  function toggleRepo(slug: string) {
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug); else next.add(slug);
-      return next;
-    });
+  function goToConfirm() {
+    setStep("confirm");
   }
 
-  async function runSync() {
+  async function runSync(values: SyncValues) {
     setSyncing(true);
     setResults([]);
-    const slugsArr = [...checked];
     const all: StagingCreateResult[] = [];
-    for (let i = 0; i < slugsArr.length; i++) {
-      const slug = slugsArr[i];
+    for (const slug of values.slugs) {
       const prep = await prepareStagingPR(slug);
       if (prep.alreadySynced) {
         all.push({ slug, created: false, merged: false, alreadySynced: true });
@@ -104,6 +121,7 @@ export function SyncStagingDialog({
                 </p>
               </DialogHeader>
 
+              <form onSubmit={handleSubmit(goToConfirm)} className="flex min-h-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 {/* Select all */}
                 <label className="flex cursor-pointer items-center gap-3 border-b border-border pb-2.5 mb-2.5">
@@ -124,9 +142,9 @@ export function SyncStagingDialog({
                     <label key={r.slug} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-muted/40">
                       <input
                         type="checkbox"
+                        value={r.slug}
                         className="h-4 w-4 rounded accent-instrument"
-                        checked={checked.has(r.slug)}
-                        onChange={() => toggleRepo(r.slug)}
+                        {...register("slugs")}
                       />
                       <span className="min-w-0 flex-1 truncate text-xs">{r.slug}</span>
                       {r.slug === selectedSlug && (
@@ -135,19 +153,16 @@ export function SyncStagingDialog({
                     </label>
                   ))}
                 </div>
+                {errors.slugs && <p className="mt-2 text-xs text-status-error">{errors.slugs.message}</p>}
               </div>
 
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
-                <Button variant="outline" size="sm" className="" onClick={handleClose}>Cancel</Button>
-                <Button
-                  size="sm"
-                  className=""
-                  disabled={checked.size === 0}
-                  onClick={() => setStep("confirm")}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={handleClose}>Cancel</Button>
+                <Button type="submit" size="sm">
                   Sync
                 </Button>
               </div>
+              </form>
             </>
           )}
 
@@ -171,7 +186,7 @@ export function SyncStagingDialog({
               </div>
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
                 <Button variant="outline" size="sm" className="" disabled={syncing} onClick={() => setStep("select")}>Back</Button>
-                <Button size="sm" className="" loading={syncing} onClick={runSync}>
+                <Button size="sm" className="" loading={syncing} onClick={handleSubmit(runSync)}>
                   {syncing ? "Syncing…" : "Confirm Sync"}
                 </Button>
               </div>

@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { changePassword, changeGithubPat } from "./actions";
@@ -23,54 +26,90 @@ function StatusMessage({ result }: { result: { ok: boolean; error?: string } | n
   return <p className="text-xs text-status-error">{result.error}</p>;
 }
 
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Confirm your new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
+
 export function ChangePasswordForm() {
   const [result, setResult] = React.useState<{ ok: boolean; error?: string } | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePasswordValues>({ resolver: zodResolver(changePasswordSchema) });
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
+  async function onSubmit(values: ChangePasswordValues) {
     setResult(null);
-    const res = await changePassword(new FormData(e.currentTarget));
+    const fd = new FormData();
+    fd.set("currentPassword", values.currentPassword);
+    fd.set("newPassword", values.newPassword);
+    fd.set("confirmPassword", values.confirmPassword);
+    const res = await changePassword(fd);
     setResult(res);
-    setLoading(false);
-    if (res.ok) formRef.current?.reset();
+    if (res.ok) reset();
   }
 
   return (
     <SettingsSection title="Change Password" description="Update your login password.">
-      <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
-        <Input name="currentPassword" type="password" placeholder="Current password" autoComplete="current-password" required />
-        <Input name="newPassword" type="password" placeholder="New password (min 8 chars)" autoComplete="new-password" required />
-        <Input name="confirmPassword" type="password" placeholder="Confirm new password" autoComplete="new-password" required />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <Input type="password" placeholder="Current password" autoComplete="current-password" {...register("currentPassword")} />
+          {errors.currentPassword && <p className="mt-1 text-xs text-status-error">{errors.currentPassword.message}</p>}
+        </div>
+        <div>
+          <Input type="password" placeholder="New password (min 8 chars)" autoComplete="new-password" {...register("newPassword")} />
+          {errors.newPassword && <p className="mt-1 text-xs text-status-error">{errors.newPassword.message}</p>}
+        </div>
+        <div>
+          <Input type="password" placeholder="Confirm new password" autoComplete="new-password" {...register("confirmPassword")} />
+          {errors.confirmPassword && <p className="mt-1 text-xs text-status-error">{errors.confirmPassword.message}</p>}
+        </div>
         <StatusMessage result={result} />
         <Button
           type="submit"
           size="sm"
-          loading={loading}
+          loading={isSubmitting}
           className="rounded-full"
         >
-          {loading ? "Saving…" : "Update Password"}
+          {isSubmitting ? "Saving…" : "Update Password"}
         </Button>
       </form>
     </SettingsSection>
   );
 }
 
+const changePatSchema = z.object({
+  pat: z.string().min(1, "GitHub Personal Access Token is required"),
+});
+
+type ChangePatValues = z.infer<typeof changePatSchema>;
+
 export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
   const [result, setResult] = React.useState<{ ok: boolean; error?: string } | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const formRef = React.useRef<HTMLFormElement>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ChangePatValues>({ resolver: zodResolver(changePatSchema) });
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
+  async function onSubmit(values: ChangePatValues) {
     setResult(null);
-    const res = await changeGithubPat(new FormData(e.currentTarget));
+    const fd = new FormData();
+    fd.set("pat", values.pat);
+    const res = await changeGithubPat(fd);
     setResult(res);
-    setLoading(false);
-    if (res.ok) formRef.current?.reset();
+    if (res.ok) reset();
   }
 
   return (
@@ -81,8 +120,11 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
       {githubLogin && (
         <p className="mb-3 text-xs text-muted-foreground">Connected as {githubLogin}</p>
       )}
-      <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
-        <Input name="pat" type="password" placeholder="ghp_… or github_pat_…" autoComplete="off" required />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <Input type="password" placeholder="ghp_… or github_pat_…" autoComplete="off" {...register("pat")} />
+          {errors.pat && <p className="mt-1 text-xs text-status-error">{errors.pat.message}</p>}
+        </div>
         <p className="text-[11px] text-muted-foreground">
           Needs <span className="font-medium text-foreground">repo</span> and <span className="font-medium text-foreground">read:org</span> scopes.
         </p>
@@ -90,10 +132,10 @@ export function ChangePatForm({ githubLogin }: { githubLogin?: string }) {
         <Button
           type="submit"
           size="sm"
-          loading={loading}
+          loading={isSubmitting}
           className="rounded-full"
         >
-          {loading ? "Validating…" : "Update Token"}
+          {isSubmitting ? "Validating…" : "Update Token"}
         </Button>
       </form>
     </SettingsSection>
