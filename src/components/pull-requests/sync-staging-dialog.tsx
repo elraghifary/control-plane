@@ -214,7 +214,7 @@ export function SyncStagingDialog({
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 underline hover:text-foreground"
                         >
-                          View pull request <ExternalLink className="h-3 w-3" />
+                          View on Github
                         </a>
                       </div>
                     ) : (
