@@ -197,11 +197,12 @@ function BatchEntryRow({
           </Button>
         </div>
       </div>
-      <Textarea
+      <AutoGrowTextarea
+        name="batch-value"
         value={value}
-        onChange={(e) => onValueChange(e.target.value)}
+        onChange={onValueChange}
+        onBlur={() => {}}
         placeholder="Value"
-        rows={3}
         className="bg-card/50 text-xs placeholder:text-sm"
       />
       {rowMessage ? (
