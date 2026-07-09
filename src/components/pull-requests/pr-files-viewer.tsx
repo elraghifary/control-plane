@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn, copyToClipboard } from "@/lib/utils";
 import { fileChangeStatusBadgeVariant } from "./pr-utils";
 import { fetchPullRequestFiles, submitLineComment } from "@/app/(app)/pull-requests/actions";
+import { sendClickUpReplyAction } from "@/app/(app)/clickup/pull-requests/actions";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 
 interface DiffRow {
@@ -56,6 +57,8 @@ interface LineCommentTarget {
   number: number;
   path: string;
   commitId: string;
+  clickupMessageId?: string;
+  currentUserGithubLogin?: string;
 }
 
 function lineCode(content: string) {
@@ -95,11 +98,14 @@ function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineC
     setMenuOpenIndex(null);
   }
 
+  function githubLineUrl(target: LineCommentTarget, line: number) {
+    const [owner, repo] = target.slug.split("/");
+    return `https://github.com/${owner}/${repo}/blob/${target.commitId}/${target.path}#L${line}`;
+  }
+
   async function copyLink(line?: number) {
     if (!commentable || !line) return;
-    const [owner, repo] = commentable.slug.split("/");
-    const url = `https://github.com/${owner}/${repo}/blob/${commentable.commitId}/${commentable.path}#L${line}`;
-    const ok = await copyToClipboard(url);
+    const ok = await copyToClipboard(githubLineUrl(commentable, line));
     if (ok) toast.success("Link copied");
     else toast.error("Could not copy link");
     setMenuOpenIndex(null);
@@ -115,6 +121,14 @@ function DiffPatch({ patch, commentable }: { patch?: string; commentable?: LineC
     if (!res.ok) {
       toast.error(res.error ?? "Could not add comment");
       return;
+    }
+    if (commentable.clickupMessageId) {
+      const lineUrl = githubLineUrl(commentable, active.line);
+      const clickupContent = `💬 Comment by ${commentable.currentUserGithubLogin ?? "unknown"} on [${commentable.path}:${active.line}](${lineUrl}):\n${commentText}`;
+      const clickupRes = await sendClickUpReplyAction(commentable.clickupMessageId, clickupContent);
+      if (!clickupRes.ok) {
+        toast.error(`Commented on GitHub, but ClickUp reply failed: ${clickupRes.error ?? "unknown error"}`);
+      }
     }
     toast.success("Comment added");
     setActive(null);
@@ -252,11 +266,15 @@ export function PrFilesViewer({
   number,
   linkedPrs = [],
   commitId,
+  clickupMessageId,
+  currentUserGithubLogin,
 }: {
   slug: string;
   number: number;
   linkedPrs?: Array<{ slug: string; number: number }>;
   commitId?: string;
+  clickupMessageId?: string;
+  currentUserGithubLogin?: string;
 }) {
   const [groups, setGroups] = React.useState<FileGroup[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -380,7 +398,7 @@ export function PrFilesViewer({
               const key = fileKey(gIdx, fIdx);
               // Line comments only supported on the PR being reviewed (group 0), which needs its commit sha.
               const commentable = gIdx === 0 && commitId
-                ? { slug, number, path: file.filename, commitId }
+                ? { slug, number, path: file.filename, commitId, clickupMessageId, currentUserGithubLogin }
                 : undefined;
               return (
                 <div
