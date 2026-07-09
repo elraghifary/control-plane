@@ -19,7 +19,7 @@ type Step = "form" | "confirm" | "done";
 
 const publishSchema = z.object({
   bump: z.enum(["minor", "patch"]),
-  branch: z.string().min(1, "Select a target branch"),
+  branch: z.string().min(1, "Branch is required"),
   syncMain: z.boolean(),
   notes: z.string(),
 });

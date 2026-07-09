@@ -2,7 +2,7 @@
 import { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, GitPullRequest, Tag, Settings, LogOut, Menu, X, MessagesSquare, PlayCircle, FileCheck2 } from "lucide-react";
+import { LayoutDashboard, GitPullRequest, Tag, Settings, LogOut, Menu, X, MessagesSquare, PlayCircle, FileCheck2, FileStack } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { ControlPlaneMark } from "@/components/brand/control-plane-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,6 +15,7 @@ const ROUTES = [
   { href: "/actions", label: "Actions", icon: PlayCircle },
   { href: "/clickup/pull-requests", label: "ClickUp Pull Requests", icon: MessagesSquare },
   { href: "/sign-offs", label: "Sign-offs", icon: FileCheck2 },
+  { href: "/manifests", label: "Manifests", icon: FileStack },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

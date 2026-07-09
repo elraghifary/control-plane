@@ -213,8 +213,8 @@ type Step = "form" | "creating" | "done";
 
 const newPrSchema = z
   .object({
-    base: z.string().min(1, "Select a base branch"),
-    head: z.string().min(1, "Select a compare branch"),
+    base: z.string().min(1, "Base branch is required"),
+    head: z.string().min(1, "Compare branch is required"),
     title: z.string().min(1, "Title is required"),
     body: z.string(),
   })

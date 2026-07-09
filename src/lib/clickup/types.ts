@@ -41,10 +41,13 @@ export interface ClickUpSignoffTask {
   assigneeEmails: string[];
 }
 
-export interface ClickUpSignoffPage {
+export interface ClickUpDocPage {
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
   htmlUrl: string;
 }
+
+export type ClickUpSignoffPage = ClickUpDocPage;
+export type ClickUpManifestPage = ClickUpDocPage;

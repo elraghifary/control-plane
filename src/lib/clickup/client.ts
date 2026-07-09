@@ -1,4 +1,4 @@
-import type { ClickUpRawMessage, ClickUpPrItem, ClickUpPage, ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpSignoffPage } from "./types";
+import type { ClickUpRawMessage, ClickUpPrItem, ClickUpPage, ClickUpSprint, ClickUpMember, ClickUpSignoffTask, ClickUpDocPage } from "./types";
 
 const PR_URL_RE = /https:\/\/github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\/pull\/(\d+)/g;
 const V2_BASE_URL = "https://api.clickup.com/api/v2";
@@ -166,15 +166,16 @@ export async function listSprintTasks(sprintListId: string): Promise<ClickUpSign
 }
 
 const SIGNOFF_DOC_NAME = "Deployment Sign-offs";
+const MANIFEST_DOC_NAME = "Deployment Manifests";
 
-interface SignoffClickUpConfig {
+interface DocsClickUpConfig {
   baseUrl: string;
   token: string;
   workspaceId: string;
   docsFolderId: string;
 }
 
-function requireSignoffConfig(): SignoffClickUpConfig {
+function requireDocsConfig(): DocsClickUpConfig {
   const baseUrl = process.env.CLICKUP_BASE_URL ?? "https://api.clickup.com/api/v3";
   const token = process.env.CLICKUP_PERSONAL_TOKEN_ELRA;
   const workspaceId = process.env.CLICKUP_WORKSPACE_ID;
@@ -185,8 +186,9 @@ function requireSignoffConfig(): SignoffClickUpConfig {
   return { baseUrl, token, workspaceId, docsFolderId };
 }
 
-// All sign-offs live as separate pages inside one dedicated doc (rather than one doc each).
-async function findSignoffDocId(config: SignoffClickUpConfig): Promise<string | null> {
+// Sign-offs and manifests each live as separate pages inside their own dedicated doc
+// (rather than one doc per page), both docs sitting in the same folder.
+async function findDocIdByName(config: DocsClickUpConfig, docName: string): Promise<string | null> {
   const { baseUrl, token, workspaceId, docsFolderId } = config;
   const url = new URL(`${baseUrl}/workspaces/${workspaceId}/docs`);
   url.searchParams.set("parent_id", docsFolderId);
@@ -202,18 +204,18 @@ async function findSignoffDocId(config: SignoffClickUpConfig): Promise<string | 
   const json = await res.json();
   type RawDoc = { id: string; name: string };
   const docs: RawDoc[] = json.docs ?? [];
-  return docs.find((d) => d.name === SIGNOFF_DOC_NAME)?.id ?? null;
+  return docs.find((d) => d.name === docName)?.id ?? null;
 }
 
-async function getOrCreateSignoffDocId(config: SignoffClickUpConfig): Promise<string> {
-  const existing = await findSignoffDocId(config);
+async function getOrCreateDocId(config: DocsClickUpConfig, docName: string): Promise<string> {
+  const existing = await findDocIdByName(config, docName);
   if (existing) return existing;
 
   const { baseUrl, token, workspaceId, docsFolderId } = config;
   const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/docs`, {
     method: "POST",
     headers: { Authorization: token, "Content-Type": "application/json" },
-    body: JSON.stringify({ name: SIGNOFF_DOC_NAME, parent: { id: docsFolderId, type: 5 }, create_page: false }),
+    body: JSON.stringify({ name: docName, parent: { id: docsFolderId, type: 5 }, create_page: false }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -223,9 +225,9 @@ async function getOrCreateSignoffDocId(config: SignoffClickUpConfig): Promise<st
   return doc.id;
 }
 
-export async function createSignoffPage(name: string, content: string): Promise<{ id: string; url: string }> {
-  const config = requireSignoffConfig();
-  const docId = await getOrCreateSignoffDocId(config);
+async function createDocPage(docName: string, name: string, content: string): Promise<{ id: string; url: string }> {
+  const config = requireDocsConfig();
+  const docId = await getOrCreateDocId(config, docName);
 
   const res = await fetch(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages`, {
     method: "POST",
@@ -240,9 +242,9 @@ export async function createSignoffPage(name: string, content: string): Promise<
   return { id: page.id, url: `https://app.clickup.com/${config.workspaceId}/v/dc/${docId}/${page.id}` };
 }
 
-export async function listSignoffPages(): Promise<ClickUpSignoffPage[]> {
-  const config = requireSignoffConfig();
-  const docId = await findSignoffDocId(config);
+async function listDocPages(docName: string): Promise<ClickUpDocPage[]> {
+  const config = requireDocsConfig();
+  const docId = await findDocIdByName(config, docName);
   if (!docId) return [];
 
   const res = await fetch(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages`, {
@@ -268,9 +270,9 @@ export async function listSignoffPages(): Promise<ClickUpSignoffPage[]> {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export async function getSignoffPageContent(pageId: string): Promise<string | null> {
-  const config = requireSignoffConfig();
-  const docId = await findSignoffDocId(config);
+async function getDocPageContent(docName: string, pageId: string): Promise<string | null> {
+  const config = requireDocsConfig();
+  const docId = await findDocIdByName(config, docName);
   if (!docId) return null;
 
   const url = new URL(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages`);
@@ -290,10 +292,10 @@ export async function getSignoffPageContent(pageId: string): Promise<string | nu
   return pages.find((p) => p.id === pageId)?.content ?? null;
 }
 
-export async function updateSignoffPage(pageId: string, content: string): Promise<void> {
-  const config = requireSignoffConfig();
-  const docId = await findSignoffDocId(config);
-  if (!docId) throw new Error("Sign-off document not found");
+async function updateDocPage(docName: string, pageId: string, content: string): Promise<void> {
+  const config = requireDocsConfig();
+  const docId = await findDocIdByName(config, docName);
+  if (!docId) throw new Error(`"${docName}" document not found`);
 
   const res = await fetch(`${config.baseUrl}/workspaces/${config.workspaceId}/docs/${docId}/pages/${pageId}`, {
     method: "PUT",
@@ -305,6 +307,16 @@ export async function updateSignoffPage(pageId: string, content: string): Promis
     throw new Error(`ClickUp API error ${res.status}: ${body.slice(0, 200)}`);
   }
 }
+
+export const createSignoffPage = (name: string, content: string) => createDocPage(SIGNOFF_DOC_NAME, name, content);
+export const listSignoffPages = () => listDocPages(SIGNOFF_DOC_NAME);
+export const getSignoffPageContent = (pageId: string) => getDocPageContent(SIGNOFF_DOC_NAME, pageId);
+export const updateSignoffPage = (pageId: string, content: string) => updateDocPage(SIGNOFF_DOC_NAME, pageId, content);
+
+export const createManifestPage = (name: string, content: string) => createDocPage(MANIFEST_DOC_NAME, name, content);
+export const listManifestPages = () => listDocPages(MANIFEST_DOC_NAME);
+export const getManifestPageContent = (pageId: string) => getDocPageContent(MANIFEST_DOC_NAME, pageId);
+export const updateManifestPage = (pageId: string, content: string) => updateDocPage(MANIFEST_DOC_NAME, pageId, content);
 
 async function findChannelIdByName(baseUrl: string, token: string, workspaceId: string, channelName: string): Promise<string> {
   const res = await fetch(`${baseUrl}/workspaces/${workspaceId}/chat/channels?limit=100`, {

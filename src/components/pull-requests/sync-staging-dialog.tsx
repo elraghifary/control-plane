@@ -4,7 +4,6 @@ import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ExternalLink } from "lucide-react";
 import type { Repository } from "@/lib/data/types";
 import type { StagingCreateResult } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
