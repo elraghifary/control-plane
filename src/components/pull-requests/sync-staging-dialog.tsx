@@ -55,7 +55,7 @@ export function SyncStagingDialog({
 
   function handleOpen() {
     setStep("select");
-    reset({ slugs: [selectedSlug].filter(Boolean) });
+    reset({ slugs: [] });
     setResults([]);
     setSyncing(false);
     setSearch("");
