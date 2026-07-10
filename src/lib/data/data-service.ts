@@ -21,6 +21,7 @@ export interface DataService {
   createAndMergeStagingPR(slug: string): Promise<StagingSyncResult>;
   createStagingPR(slug: string): Promise<StagingCreateResult>;
   prepareStagingPR(slug: string): Promise<StagingPrepareResult>;
+  prepareBranchPR(slug: string, base: string): Promise<StagingPrepareResult>;
   listBranches(slug: string): Promise<string[]>;
   createPullRequest(slug: string, title: string, head: string, base: string, body: string): Promise<{ number: number; htmlUrl: string }>;
   compareBranches(slug: string, base: string, head: string): Promise<PullRequestFileChange[]>;

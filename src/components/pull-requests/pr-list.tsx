@@ -9,6 +9,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { useNavigationLoading } from "@/components/navigation-loading";
 import { PrCard } from "./pr-card";
 import { SyncStagingDialog } from "./sync-staging-dialog";
+import { SyncWebsiteDialog } from "./sync-website-dialog";
 import { NewPrDialog } from "./new-pr-dialog";
 import { RepositorySelector } from "@/components/shell/repository-selector";
 
@@ -44,6 +45,7 @@ export function PrList({
         <div className="flex items-center gap-2">
           <NewPrDialog slug={selectedSlug} />
           <SyncStagingDialog repositories={repositories} selectedSlug={selectedSlug} />
+          <SyncWebsiteDialog />
         </div>
       </div>
 

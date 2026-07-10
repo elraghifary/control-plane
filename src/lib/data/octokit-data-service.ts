@@ -406,19 +406,23 @@ export class OctokitDataService implements DataService {
   }
 
   async prepareStagingPR(slug: string): Promise<StagingPrepareResult> {
+    return this.prepareBranchPR(slug, "staging");
+  }
+
+  async prepareBranchPR(slug: string, base: string): Promise<StagingPrepareResult> {
     const { owner, repo } = parseSlug(slug);
     try {
-      const open = await this.octokit.rest.pulls.list({ owner, repo, state: "open", base: "staging", per_page: 100 });
-      const existing = open.data.find((p) => p.head.ref === "development" && p.base.ref === "staging");
+      const open = await this.octokit.rest.pulls.list({ owner, repo, state: "open", base, per_page: 100 });
+      const existing = open.data.find((p) => p.head.ref === "development" && p.base.ref === base);
       if (existing) {
         return { slug, created: false, prNumber: existing.number, prUrl: existing.html_url };
       }
       const newPr = await this.octokit.rest.pulls.create({
         owner, repo,
-        title: "Sync Development to Staging",
+        title: `Sync Development to ${base}`,
         head: "development",
-        base: "staging",
-        body: STAGING_BODY,
+        base,
+        body: `📦 Sync Development to ${base}\n\nThis PR merges the development branch into ${base}.`,
       });
       return { slug, created: true, prNumber: newPr.data.number, prUrl: newPr.data.html_url };
     } catch (e) {

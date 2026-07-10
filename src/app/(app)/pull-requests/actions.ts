@@ -119,6 +119,11 @@ export async function prepareStagingPR(slug: string): Promise<StagingPrepareResu
   return data.prepareStagingPR(slug);
 }
 
+export async function prepareBranchSyncPR(slug: string, base: string): Promise<StagingPrepareResult> {
+  const data = await getDataService();
+  return data.prepareBranchPR(slug, base);
+}
+
 export async function syncStaging(slugs: string[]): Promise<StagingCreateResult[]> {
   const data = await getDataService();
   const results = await Promise.all(slugs.map((slug) => data.createStagingPR(slug)));
