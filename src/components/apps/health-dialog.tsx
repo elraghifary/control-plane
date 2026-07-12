@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getHealthAction } from "@/app/(app)/apps/actions";
+import { cn } from "@/lib/utils";
 import type { EnvHealth } from "@/lib/apps/types";
 
-export function HealthDialog() {
+export function HealthDialog({ className }: { className?: string } = {}) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [results, setResults] = React.useState<EnvHealth[]>([]);
@@ -31,7 +32,7 @@ export function HealthDialog() {
 
   return (
     <>
-      <Button size="sm" onClick={() => handleOpenChange(true)}>Health</Button>
+      <Button size="sm" className={cn(className)} onClick={() => handleOpenChange(true)}>Health</Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="flex h-[min(90vh,860px)] max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1200px)]">

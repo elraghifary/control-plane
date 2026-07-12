@@ -78,14 +78,12 @@ export function EnvShell({
   return (
     <WriteGuardProvider environment={environment}>
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <EnvSelector environments={environments} selected={environment} />
-          </div>
-          <div className="flex items-center gap-2">
-            <SearchDialog />
-            <CompareDialog />
-            <HealthDialog />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <EnvSelector environments={environments} selected={environment} className="w-full sm:w-auto" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <SearchDialog className="w-full sm:w-auto" />
+            <CompareDialog className="w-full sm:w-auto" />
+            <HealthDialog className="w-full sm:w-auto" />
           </div>
         </div>
 

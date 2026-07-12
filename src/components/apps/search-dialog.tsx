@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CellStatusBadge } from "./cell-status-badge";
 import { searchSecretKeysAction } from "@/app/(app)/apps/actions";
+import { cn } from "@/lib/utils";
 import type { SearchRow } from "@/lib/apps/types";
 
 const ENV_COLUMNS = [
@@ -15,7 +16,7 @@ const ENV_COLUMNS = [
   { id: "production" as const, label: "Production" },
 ];
 
-export function SearchDialog() {
+export function SearchDialog({ className }: { className?: string } = {}) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [rows, setRows] = React.useState<SearchRow[]>([]);
@@ -46,7 +47,7 @@ export function SearchDialog() {
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>Search</Button>
+      <Button size="sm" className={cn(className)} onClick={() => setOpen(true)}>Search</Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="flex h-[min(90vh,860px)] max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1200px)]">

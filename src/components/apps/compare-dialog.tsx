@@ -30,7 +30,7 @@ function SectionTable({ title, children }: { title: string; children: React.Reac
   );
 }
 
-export function CompareDialog() {
+export function CompareDialog({ className }: { className?: string } = {}) {
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [comparison, setComparison] = React.useState<Comparison | null>(null);
@@ -58,7 +58,7 @@ export function CompareDialog() {
 
   return (
     <>
-      <Button size="sm" onClick={() => handleOpenChange(true)}>Compare</Button>
+      <Button size="sm" className={cn(className)} onClick={() => handleOpenChange(true)}>Compare</Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="flex h-[min(90vh,860px)] max-w-[min(96vw,1200px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1200px)]">
