@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <div className="relative z-10 flex min-h-screen flex-col">
         <TopStrip githubLogin={session.user.githubLogin} />
-        <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 pb-8 pt-20 sm:px-6">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-8 pb-8 pt-20">{children}</main>
       </div>
     </div>
   );
