@@ -38,6 +38,8 @@ export function SyncWebsiteDialog() {
   const [step, setStep] = React.useState<Step>("select");
   const [results, setResults] = React.useState<BranchSyncResult[]>([]);
   const [syncing, setSyncing] = React.useState(false);
+  const [totalToSync, setTotalToSync] = React.useState(0);
+  const [syncBranches, setSyncBranches] = React.useState<string[]>([]);
 
   const {
     register,
@@ -80,28 +82,32 @@ export function SyncWebsiteDialog() {
   async function runSync(values: SyncValues) {
     setSyncing(true);
     setResults([]);
-    const all: BranchSyncResult[] = [];
-    for (const branch of values.branches) {
-      const prep = await prepareBranchSyncPR(WEBSITE_SLUG, branch);
-      if (prep.alreadySynced) {
-        all.push({ branch, merged: false, alreadySynced: true });
-        continue;
-      }
-      if (prep.error || !prep.prNumber) {
-        all.push({ branch, merged: false, error: prep.error ?? "Failed to create pull request" });
-        continue;
-      }
-      const mergeRes = await mergePullRequest(WEBSITE_SLUG, prep.prNumber);
-      all.push({
-        branch,
-        merged: mergeRes.ok,
-        prUrl: prep.prUrl,
-        error: mergeRes.ok ? undefined : (mergeRes.error ?? "Merge failed"),
-      });
-    }
-    setResults(all);
-    setSyncing(false);
+    setTotalToSync(values.branches.length);
+    setSyncBranches(values.branches);
     setStep("done");
+
+    await Promise.all(
+      values.branches.map(async (branch) => {
+        let result: BranchSyncResult;
+        const prep = await prepareBranchSyncPR(WEBSITE_SLUG, branch);
+        if (prep.alreadySynced) {
+          result = { branch, merged: false, alreadySynced: true };
+        } else if (prep.error || !prep.prNumber) {
+          result = { branch, merged: false, error: prep.error ?? "Failed to create pull request" };
+        } else {
+          const mergeRes = await mergePullRequest(WEBSITE_SLUG, prep.prNumber);
+          result = {
+            branch,
+            merged: mergeRes.ok,
+            prUrl: prep.prUrl,
+            error: mergeRes.ok ? undefined : (mergeRes.error ?? "Merge failed"),
+          };
+        }
+        setResults((prev) => [...prev, result]);
+      }),
+    );
+
+    setSyncing(false);
   }
 
   return (
@@ -198,33 +204,43 @@ export function SyncWebsiteDialog() {
             <>
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
                 <DialogTitle className="text-base">Sync Results</DialogTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {syncing ? `Syncing… ${results.length}/${totalToSync}` : `${results.length}/${totalToSync} complete`}
+                </p>
               </DialogHeader>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
-                {results.map((r) => (
-                  <div key={r.branch} className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
-                    <span className="text-xs text-foreground">{r.branch}</span>
-                    {r.alreadySynced ? (
-                      <p className="text-xs text-muted-foreground">Already in sync — no changes to merge.</p>
-                    ) : r.merged && r.prUrl ? (
-                      <div className="flex items-center gap-1.5 text-xs text-status-healthy">
-                        <span>Merged</span>
-                        <a
-                          href={r.prUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 underline hover:text-foreground"
-                        >
-                          View on Github
-                        </a>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-status-error">{r.error ?? "Failed"}</p>
-                    )}
-                  </div>
-                ))}
+                {syncBranches.map((branch) => {
+                  const r = results.find((result) => result.branch === branch);
+                  return (
+                    <div key={branch} className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
+                      <span className="text-xs text-foreground">{branch}</span>
+                      {!r ? (
+                        <p className="text-xs text-muted-foreground animate-pulse">Syncing…</p>
+                      ) : r.alreadySynced ? (
+                        <p className="text-xs text-muted-foreground">Already in sync — no changes to merge.</p>
+                      ) : r.merged && r.prUrl ? (
+                        <div className="flex items-center gap-1.5 text-xs text-status-healthy">
+                          <span>Merged</span>
+                          <a
+                            href={r.prUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 underline hover:text-foreground"
+                          >
+                            View on Github
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-status-error">{r.error ?? "Failed"}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex shrink-0 justify-end border-t border-border px-5 py-4">
-                <Button size="sm" onClick={handleClose}>Done</Button>
+                <Button size="sm" disabled={syncing} onClick={handleClose}>
+                  {syncing ? "Syncing…" : "Done"}
+                </Button>
               </div>
             </>
           )}

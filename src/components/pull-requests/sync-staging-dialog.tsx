@@ -36,6 +36,8 @@ export function SyncStagingDialog({
   const [step, setStep] = React.useState<Step>("select");
   const [results, setResults] = React.useState<StagingCreateResult[]>([]);
   const [syncing, setSyncing] = React.useState(false);
+  const [totalToSync, setTotalToSync] = React.useState(0);
+  const [syncSlugs, setSyncSlugs] = React.useState<string[]>([]);
   const [search, setSearch] = React.useState("");
 
   const {
@@ -83,29 +85,34 @@ export function SyncStagingDialog({
   async function runSync(values: SyncValues) {
     setSyncing(true);
     setResults([]);
-    const all: StagingCreateResult[] = [];
-    for (const slug of values.slugs) {
-      const prep = await prepareStagingPR(slug);
-      if (prep.alreadySynced) {
-        all.push({ slug, created: false, merged: false, alreadySynced: true });
-        continue;
-      }
-      if (prep.error || !prep.prNumber) {
-        all.push({ slug, created: false, merged: false, error: prep.error ?? "Failed to create pull request" });
-        continue;
-      }
-      const mergeRes = await mergePullRequest(slug, prep.prNumber);
-      all.push({
-        slug,
-        created: prep.created ?? false,
-        merged: mergeRes.ok,
-        prUrl: prep.prUrl,
-        error: mergeRes.ok ? undefined : (mergeRes.error ?? "Merge failed"),
-      });
-    }
-    setResults(all);
-    setSyncing(false);
+    setTotalToSync(values.slugs.length);
+    setSyncSlugs(values.slugs);
     setStep("done");
+
+    await Promise.all(
+      values.slugs.map(async (slug) => {
+        let result: StagingCreateResult;
+        const prep = await prepareStagingPR(slug);
+        if (prep.alreadySynced) {
+          result = { slug, created: false, merged: false, alreadySynced: true };
+        } else if (prep.error || !prep.prNumber) {
+          result = { slug, created: false, merged: false, error: prep.error ?? "Failed to create pull request" };
+        } else {
+          const mergeRes = await mergePullRequest(slug, prep.prNumber);
+          result = {
+            slug,
+            created: prep.created ?? false,
+            merged: mergeRes.ok,
+            prUrl: prep.prUrl,
+            error: mergeRes.ok ? undefined : (mergeRes.error ?? "Merge failed"),
+          };
+        }
+        // append as each repo finishes, so results show up in completion order
+        setResults((prev) => [...prev, result]);
+      }),
+    );
+
+    setSyncing(false);
   }
 
   return (
@@ -229,33 +236,43 @@ export function SyncStagingDialog({
             <>
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
                 <DialogTitle className="text-base">Sync Results</DialogTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {syncing ? `Syncing… ${results.length}/${totalToSync}` : `${results.length}/${totalToSync} complete`}
+                </p>
               </DialogHeader>
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-2">
-                {results.map((r) => (
-                  <div key={r.slug} className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
-                    <span className="text-xs text-foreground">{r.slug}</span>
-                    {r.alreadySynced ? (
-                      <p className="text-xs text-muted-foreground">Already in sync — no changes to merge.</p>
-                    ) : r.merged && r.prUrl ? (
-                      <div className="flex items-center gap-1.5 text-xs text-status-healthy">
-                        <span>Merged</span>
-                        <a
-                          href={r.prUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 underline hover:text-foreground"
-                        >
-                          View on Github
-                        </a>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-status-error">{r.error ?? "Failed"}</p>
-                    )}
-                  </div>
-                ))}
+                {syncSlugs.map((slug) => {
+                  const r = results.find((result) => result.slug === slug);
+                  return (
+                    <div key={slug} className="rounded-xl border border-border/70 bg-card/50 p-3 space-y-1.5">
+                      <span className="text-xs text-foreground">{slug}</span>
+                      {!r ? (
+                        <p className="text-xs text-muted-foreground animate-pulse">Syncing…</p>
+                      ) : r.alreadySynced ? (
+                        <p className="text-xs text-muted-foreground">Already in sync — no changes to merge.</p>
+                      ) : r.merged && r.prUrl ? (
+                        <div className="flex items-center gap-1.5 text-xs text-status-healthy">
+                          <span>Merged</span>
+                          <a
+                            href={r.prUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 underline hover:text-foreground"
+                          >
+                            View on Github
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-status-error">{r.error ?? "Failed"}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex shrink-0 justify-end border-t border-border px-5 py-4">
-                <Button size="sm" className="" onClick={handleClose}>Done</Button>
+                <Button size="sm" className="" disabled={syncing} onClick={handleClose}>
+                  {syncing ? "Syncing…" : "Done"}
+                </Button>
               </div>
             </>
           )}
