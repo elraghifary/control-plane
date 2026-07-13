@@ -155,7 +155,7 @@ export function SyncWebsiteDialog() {
                           className="h-4 w-4 rounded accent-instrument"
                           {...register("branches")}
                         />
-                        <span className="min-w-0 flex-1 truncate text-sm">{branch}</span>
+                        <span className="min-w-0 flex-1 truncate text-xs">{branch}</span>
                       </label>
                     ))}
                   </div>

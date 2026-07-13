@@ -6,7 +6,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { releaseProductionAction, resolveJenkinsBuildUrlAction } from "@/app/(app)/releases/actions";
+import { releaseProductionAction, resolveJenkinsBuildUrlAction, getReleaseTagsAction } from "@/app/(app)/releases/actions";
+import { groupRepositories } from "@/components/shell/repository-selector";
+import { resolveJobName } from "@/lib/jenkins/job-name";
+import type { Repository } from "@/lib/data/types";
 
 type Step = "select" | "confirm" | "done";
 
@@ -66,9 +69,24 @@ function JenkinsBuildLink({ queueUrl }: { queueUrl: string }) {
   );
 }
 
-export function ReleaseProductionDialog({ repoName, tags }: { repoName: string; tags: string[] }) {
+export function ReleaseProductionDialog({
+  repositories,
+  slug,
+  repoName,
+  tags,
+}: {
+  repositories: Repository[];
+  slug: string;
+  repoName: string;
+  tags: string[];
+}) {
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<Step>("select");
+  const [selectedSlug, setSelectedSlug] = React.useState(slug);
+  const [currentRepoName, setCurrentRepoName] = React.useState(repoName);
+  const [currentTags, setCurrentTags] = React.useState(tags);
+  const [repoQuery, setRepoQuery] = React.useState("");
+  const [repoPopoverOpen, setRepoPopoverOpen] = React.useState(false);
   const [tag, setTag] = React.useState("");
   const [tagQuery, setTagQuery] = React.useState("");
   const [tagPopoverOpen, setTagPopoverOpen] = React.useState(false);
@@ -78,20 +96,42 @@ export function ReleaseProductionDialog({ repoName, tags }: { repoName: string; 
 
   function handleOpen() {
     setStep("select");
+    setSelectedSlug(slug);
+    setCurrentRepoName(repoName);
+    setCurrentTags(tags);
     setTag(tags[0] ?? "");
     setTagQuery("");
+    setRepoQuery("");
     setError(null);
     setQueueUrl(null);
     setTriggering(false);
     setOpen(true);
   }
 
-  const filteredTags = tags.filter((t) => t.toLowerCase().includes(tagQuery.toLowerCase()));
+  const filteredTags = currentTags.filter((t) => t.toLowerCase().includes(tagQuery.toLowerCase()));
+
+  const filteredRepoGroups = groupRepositories(
+    repositories.filter((r) => r.slug.toLowerCase().includes(repoQuery.trim().toLowerCase())),
+  );
+
+  async function handleSelectRepo(newSlug: string) {
+    setRepoPopoverOpen(false);
+    setRepoQuery("");
+    if (newSlug === selectedSlug) return;
+    const repo = repositories.find((r) => r.slug === newSlug);
+    setSelectedSlug(newSlug);
+    setCurrentRepoName(repo?.name ?? "");
+    setTag("");
+    setTagQuery("");
+    const newTags = await getReleaseTagsAction(newSlug);
+    setCurrentTags(newTags);
+    setTag(newTags[0] ?? "");
+  }
 
   async function trigger() {
     setError(null);
     setTriggering(true);
-    const res = await releaseProductionAction(repoName, tag);
+    const res = await releaseProductionAction(currentRepoName, tag);
     setTriggering(false);
     if (res.ok) {
       setQueueUrl(res.queueUrl ?? null);
@@ -117,44 +157,90 @@ export function ReleaseProductionDialog({ repoName, tags }: { repoName: string; 
                 <DialogTitle className="text-base">Release Production</DialogTitle>
               </DialogHeader>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-                <label className={fieldLabelCls}>Tag</label>
-                <Popover modal open={tagPopoverOpen} onOpenChange={(v) => { setTagPopoverOpen(v); if (!v) setTagQuery(""); }}>
-                  <PopoverTrigger asChild>
-                    <button className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
-                      <span className={cn("min-w-0 flex-1 truncate text-left", !tag && "text-muted-foreground")}>
-                        {tag || "Select tag…"}
-                      </span>
-                      <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-                    <div className="border-b border-border px-3 py-2">
-                      <input
-                        autoFocus
-                        value={tagQuery}
-                        onChange={(e) => setTagQuery(e.target.value)}
-                        placeholder="Search…"
-                        className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                      />
-                    </div>
-                    <div className="max-h-52 overflow-y-auto">
-                      {filteredTags.length === 0 && (
-                        <p className="px-3 py-2 text-sm text-muted-foreground">No tags found.</p>
-                      )}
-                      {filteredTags.map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => { setTag(t); setTagQuery(""); setTagPopoverOpen(false); }}
-                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
-                        >
-                          <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", tag !== t && "opacity-0")} />
-                          <span className="min-w-0 flex-1 break-all">{t}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 space-y-5">
+                <div>
+                  <label className={fieldLabelCls}>Repository</label>
+                  <Popover modal open={repoPopoverOpen} onOpenChange={(v) => { setRepoPopoverOpen(v); if (!v) setRepoQuery(""); }}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
+                        <span className="min-w-0 flex-1 truncate text-left">{selectedSlug || "Select repository…"}</span>
+                        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <div className="border-b border-border px-3 py-2">
+                        <input
+                          autoFocus
+                          value={repoQuery}
+                          onChange={(e) => setRepoQuery(e.target.value)}
+                          placeholder="Search repository…"
+                          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {filteredRepoGroups.length === 0 && (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">No repositories found.</p>
+                        )}
+                        {filteredRepoGroups.map((group) => (
+                          <div key={group.label}>
+                            <p className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{group.label}</p>
+                            {group.repos.map((r) => (
+                              <button
+                                key={r.slug}
+                                type="button"
+                                onClick={() => handleSelectRepo(r.slug)}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
+                              >
+                                <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", r.slug !== selectedSlug && "opacity-0")} />
+                                <span className="min-w-0 flex-1 truncate">{r.slug}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <label className={fieldLabelCls}>Tag</label>
+                  <Popover modal open={tagPopoverOpen} onOpenChange={(v) => { setTagPopoverOpen(v); if (!v) setTagQuery(""); }}>
+                    <PopoverTrigger asChild>
+                      <button className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
+                        <span className={cn("min-w-0 flex-1 truncate text-left", !tag && "text-muted-foreground")}>
+                          {tag || "Select tag…"}
+                        </span>
+                        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <div className="border-b border-border px-3 py-2">
+                        <input
+                          autoFocus
+                          value={tagQuery}
+                          onChange={(e) => setTagQuery(e.target.value)}
+                          placeholder="Search…"
+                          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {filteredTags.length === 0 && (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">No tags found.</p>
+                        )}
+                        {filteredTags.map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => { setTag(t); setTagQuery(""); setTagPopoverOpen(false); }}
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
+                          >
+                            <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", tag !== t && "opacity-0")} />
+                            <span className="min-w-0 flex-1 break-all">{t}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
 
               <div className="flex shrink-0 justify-end gap-2 border-t border-border px-5 py-4">
@@ -173,7 +259,7 @@ export function ReleaseProductionDialog({ repoName, tags }: { repoName: string; 
               <div className="flex-1 px-5 py-5 space-y-4 text-sm text-muted-foreground">
                 <p>
                   Trigger Jenkins job{" "}
-                  <span className="font-semibold text-foreground">{repoName}-release</span>{" "}
+                  <span className="font-semibold text-foreground">{resolveJobName(currentRepoName, tag)}</span>{" "}
                   for tag <span className="font-semibold text-foreground">{tag}</span>?
                 </p>
                 {error && <p className="text-xs text-status-error">{error}</p>}

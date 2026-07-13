@@ -6,11 +6,11 @@ import { triggerProductionRelease, resolveQueueItemBuildUrl } from "@/lib/jenkin
 import type { DataService } from "@/lib/data/data-service";
 import type { PublishReleaseResult } from "@/lib/data/types";
 
-async function describeSyncFailure(data: DataService, slug: string, number: number): Promise<string | null> {
+async function describeSyncFailure(data: DataService, slug: string, number: number, targetBranch: string): Promise<string | null> {
   try {
     const pr = await data.getPullRequest(slug, number);
     if (pr.checksStatus === "failure") return `Sync failed — checks failing on development: ${pr.failingChecks.join(", ")}`;
-    if (!pr.mergeable) return "Sync failed — development has merge conflicts with main. Resolve them, then try again.";
+    if (!pr.mergeable) return `Sync failed — development has merge conflicts with ${targetBranch}. Resolve them, then try again.`;
     if (pr.checksStatus === "pending") return "Sync failed — checks are still running on development. Try again once they finish.";
     return null;
   } catch {
@@ -27,6 +27,22 @@ export async function listBranchesAction(slug: string): Promise<string[]> {
   }
 }
 
+export async function getReleaseContextAction(
+  slug: string,
+): Promise<{ latestTag: string | null; defaultBranch: string }> {
+  const data = await getDataService();
+  const releases = await data.listReleases(slug);
+  const latestTag = releases.find((r) => r.isLatest)?.tagName ?? releases[0]?.tagName ?? null;
+  const defaultBranch = releases[0]?.targetBranch ?? "main";
+  return { latestTag, defaultBranch };
+}
+
+export async function getReleaseTagsAction(slug: string): Promise<string[]> {
+  const data = await getDataService();
+  const releases = await data.listReleases(slug);
+  return releases.map((r) => r.tagName);
+}
+
 export async function generateReleaseNotesAction(
   slug: string,
   tagName: string,
@@ -37,18 +53,20 @@ export async function generateReleaseNotesAction(
   return data.generateReleaseNotes(slug, tagName, targetBranch, previousTag);
 }
 
-export async function syncMainAction(
+export async function syncBranchAction(
   slug: string,
+  targetBranch: string,
 ): Promise<{ ok: boolean; alreadySynced?: boolean; error?: string }> {
   const data = await getDataService();
+  const label = targetBranch.charAt(0).toUpperCase() + targetBranch.slice(1);
   let pr: { number: number; htmlUrl: string };
   try {
     pr = await data.createPullRequest(
       slug,
-      "Sync Development to Main",
+      `Sync Development to ${label}`,
       "development",
-      "main",
-      "📦 Sync Development to Main\n\nThis PR merges the development branch into main before the release.",
+      targetBranch,
+      `📦 Sync Development to ${label}\n\nThis PR merges the development branch into ${targetBranch} before the release.`,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Sync failed";
@@ -60,7 +78,7 @@ export async function syncMainAction(
     await data.mergePullRequest(slug, pr.number);
     return { ok: true };
   } catch (e) {
-    const reason = await describeSyncFailure(data, slug, pr.number);
+    const reason = await describeSyncFailure(data, slug, pr.number, targetBranch);
     const msg = e instanceof Error ? e.message : "Sync failed";
     return { ok: false, error: reason ?? msg };
   }

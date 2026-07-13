@@ -10,12 +10,26 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { listBranchesAction, generateReleaseNotesAction, publishReleaseAction, syncMainAction } from "@/app/(app)/releases/actions";
+import { listBranchesAction, generateReleaseNotesAction, publishReleaseAction, syncBranchAction, getReleaseContextAction } from "@/app/(app)/releases/actions";
 import { KineticTextLoader } from "@/components/ui/kinetic-text-loader";
 import { Textarea } from "@/components/ui/textarea";
+import { groupRepositories } from "@/components/shell/repository-selector";
+import type { Repository } from "@/lib/data/types";
 
 type BumpType = "minor" | "patch";
 type Step = "form" | "confirm" | "done";
+
+const WEBSITE_SYNC_BRANCHES = ["konsul", "mitra", "dapur"];
+
+function getSyncConfig(isWebsite: boolean, branch: string): { label: string; targetBranch: string } | null {
+  if (isWebsite && WEBSITE_SYNC_BRANCHES.includes(branch)) {
+    return { label: `Sync ${branch.charAt(0).toUpperCase()}${branch.slice(1)}`, targetBranch: branch };
+  }
+  if (branch === "main") {
+    return { label: "Sync Main", targetBranch: "main" };
+  }
+  return null;
+}
 
 const publishSchema = z.object({
   bump: z.enum(["minor", "patch"]),
@@ -38,10 +52,12 @@ function bumpVersion(latestTag: string | null, bump: BumpType): string {
 const fieldLabelCls = "mb-3 block text-xs font-medium uppercase tracking-wide text-muted-foreground";
 
 export function PublishReleaseDialog({
+  repositories,
   slug,
   latestTag,
   defaultBranch,
 }: {
+  repositories: Repository[];
   slug: string;
   latestTag: string | null;
   defaultBranch: string;
@@ -49,6 +65,10 @@ export function PublishReleaseDialog({
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<Step>("form");
+  const [selectedSlug, setSelectedSlug] = React.useState(slug);
+  const [currentLatestTag, setCurrentLatestTag] = React.useState(latestTag);
+  const [repoQuery, setRepoQuery] = React.useState("");
+  const [repoPopoverOpen, setRepoPopoverOpen] = React.useState(false);
   const [branchQuery, setBranchQuery] = React.useState("");
   const [branchPopoverOpen, setBranchPopoverOpen] = React.useState(false);
   const [branches, setBranches] = React.useState<string[]>([]);
@@ -74,12 +94,17 @@ export function PublishReleaseDialog({
   const bump = watch("bump");
   const branch = watch("branch");
   const syncMain = watch("syncMain");
-  const computedTag = bumpVersion(latestTag, bump);
+  const computedTag = bumpVersion(currentLatestTag, bump);
+  const isWebsite = repositories.find((r) => r.slug === selectedSlug)?.name === "website";
+  const syncConfig = getSyncConfig(isWebsite, branch);
 
   function handleOpen() {
     setStep("form");
+    setSelectedSlug(slug);
+    setCurrentLatestTag(latestTag);
     reset({ bump: "minor", branch: defaultBranch, syncMain: false, notes: "" });
     setBranchQuery("");
+    setRepoQuery("");
     lastGeneratedNotes.current = "";
     setPublishResult(null);
     setPublishError(null);
@@ -92,12 +117,28 @@ export function PublishReleaseDialog({
     b.toLowerCase().includes(branchQuery.toLowerCase())
   );
 
+  const filteredRepoGroups = groupRepositories(
+    repositories.filter((r) => r.slug.toLowerCase().includes(repoQuery.trim().toLowerCase())),
+  );
+
+  async function handleSelectRepo(newSlug: string) {
+    setRepoPopoverOpen(false);
+    setRepoQuery("");
+    if (newSlug === selectedSlug) return;
+    setSelectedSlug(newSlug);
+    setBranches([]);
+    const ctx = await getReleaseContextAction(newSlug);
+    setCurrentLatestTag(ctx.latestTag);
+    setValue("branch", ctx.defaultBranch, { shouldValidate: true });
+    listBranchesAction(newSlug).then((b) => setBranches(b));
+  }
+
   React.useEffect(() => {
     if (!open || step !== "form") return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       setNotesLoading(true);
-      const generated = await generateReleaseNotesAction(slug, computedTag, branch, latestTag ?? undefined);
+      const generated = await generateReleaseNotesAction(selectedSlug, computedTag, branch, currentLatestTag ?? undefined);
       if (!cancelled) {
         lastGeneratedNotes.current = generated;
         setValue("notes", generated);
@@ -106,7 +147,12 @@ export function PublishReleaseDialog({
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, step, computedTag, branch]);
+  }, [open, step, selectedSlug, computedTag, branch]);
+
+  React.useEffect(() => {
+    setValue("syncMain", false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSlug, branch]);
 
   function goToConfirm() {
     setStep("confirm");
@@ -118,8 +164,8 @@ export function PublishReleaseDialog({
 
     const values = getValues();
     let finalNotes = values.notes;
-    if (values.syncMain) {
-      const syncRes = await syncMainAction(slug);
+    if (values.syncMain && syncConfig) {
+      const syncRes = await syncBranchAction(selectedSlug, syncConfig.targetBranch);
       if (!syncRes.ok) {
         setPublishing(false);
         setPublishError(syncRes.error ?? "Sync failed");
@@ -128,12 +174,12 @@ export function PublishReleaseDialog({
       // The merge above can add commits to `branch` that weren't reflected when
       // notes were first generated — refresh them, unless the user edited by hand.
       if (values.notes === lastGeneratedNotes.current) {
-        finalNotes = await generateReleaseNotesAction(slug, computedTag, values.branch, latestTag ?? undefined);
+        finalNotes = await generateReleaseNotesAction(selectedSlug, computedTag, values.branch, currentLatestTag ?? undefined);
         setValue("notes", finalNotes);
       }
     }
 
-    const res = await publishReleaseAction(slug, computedTag, values.branch, finalNotes);
+    const res = await publishReleaseAction(selectedSlug, computedTag, values.branch, finalNotes);
     if (res.ok && res.result) {
       router.refresh();
       React.startTransition(() => {
@@ -161,9 +207,9 @@ export function PublishReleaseDialog({
             <>
               <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
                 <DialogTitle className="text-base">Publish Release</DialogTitle>
-                {latestTag && (
+                {currentLatestTag && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Current latest: <span>{latestTag}</span>
+                    Current latest: <span>{currentLatestTag}</span>
                   </p>
                 )}
               </DialogHeader>
@@ -177,6 +223,51 @@ export function PublishReleaseDialog({
                 )}
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 space-y-5">
+                {/* Repository */}
+                <div>
+                  <label className={fieldLabelCls}>Repository</label>
+                  <Popover modal open={repoPopoverOpen} onOpenChange={(v) => { setRepoPopoverOpen(v); if (!v) setRepoQuery(""); }}>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 text-sm outline-none transition-colors hover:border-instrument/40 focus:border-instrument/60">
+                        <span className="min-w-0 flex-1 truncate text-left">{selectedSlug || "Select repository…"}</span>
+                        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <div className="border-b border-border px-3 py-2">
+                        <input
+                          autoFocus
+                          value={repoQuery}
+                          onChange={(e) => setRepoQuery(e.target.value)}
+                          placeholder="Search repository…"
+                          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto">
+                        {filteredRepoGroups.length === 0 && (
+                          <p className="px-3 py-2 text-sm text-muted-foreground">No repositories found.</p>
+                        )}
+                        {filteredRepoGroups.map((group) => (
+                          <div key={group.label}>
+                            <p className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{group.label}</p>
+                            {group.repos.map((r) => (
+                              <button
+                                key={r.slug}
+                                type="button"
+                                onClick={() => handleSelectRepo(r.slug)}
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted"
+                              >
+                                <Check className={cn("h-3.5 w-3.5 shrink-0 text-instrument", r.slug !== selectedSlug && "opacity-0")} />
+                                <span className="min-w-0 flex-1 truncate">{r.slug}</span>
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
                 {/* Bump type */}
                 <div>
                   <label className={fieldLabelCls}>Next version</label>
@@ -195,7 +286,7 @@ export function PublishReleaseDialog({
                       >
                         <div className="text-xs font-medium capitalize">{b}</div>
                         <div className="mt-0.5 text-sm font-semibold">
-                          {bumpVersion(latestTag, b)}
+                          {bumpVersion(currentLatestTag, b)}
                         </div>
                       </button>
                     ))}
@@ -254,20 +345,22 @@ export function PublishReleaseDialog({
                   {errors.branch && <p className="mt-1.5 text-xs text-status-error">{errors.branch.message}</p>}
                 </div>
 
-                {/* Sync Main */}
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card/50 px-3 py-3 transition-colors hover:border-instrument/40">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded accent-instrument"
-                    {...register("syncMain")}
-                  />
-                  <div>
-                    <p className="text-sm font-medium">Sync Main</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Create and merge a PR from <span>development → main</span> before releasing.
-                    </p>
-                  </div>
-                </label>
+                {/* Sync branch */}
+                {syncConfig && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card/50 px-3 py-3 transition-colors hover:border-instrument/40">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded accent-instrument"
+                      {...register("syncMain")}
+                    />
+                    <div>
+                      <p className="text-sm font-medium">{syncConfig.label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Create and merge a PR from <span>development → {syncConfig.targetBranch}</span> before releasing.
+                      </p>
+                    </div>
+                  </label>
+                )}
 
                 {/* Release notes */}
                 <div>
@@ -298,20 +391,21 @@ export function PublishReleaseDialog({
                 <DialogTitle className="text-base">Confirm Publish Release</DialogTitle>
               </DialogHeader>
               <div className="flex-1 px-5 py-5 space-y-4 text-sm text-muted-foreground">
-                {syncMain && (
+                {syncMain && syncConfig && (
                   <p>
-                    Merge <span className="text-foreground">development → main</span>, then publish{" "}
+                    Merge <span className="text-foreground">development → {syncConfig.targetBranch}</span>, then publish{" "}
                     <span className="font-semibold text-foreground">{computedTag}</span>{" "}
-                    from <span className="text-foreground">{branch}</span> as the latest release?
+                    from <span className="text-foreground">{branch}</span> as the latest release on{" "}
+                    <span className="text-foreground">{selectedSlug}</span>?
                   </p>
                 )}
-                {!syncMain && (
+                {!(syncMain && syncConfig) && (
                   <p>
                     Publish{" "}
                     <span className="font-semibold text-foreground">{computedTag}</span>{" "}
                     from{" "}
                     <span className="text-foreground">{branch}</span>{" "}
-                    as the latest release?
+                    as the latest release on <span className="text-foreground">{selectedSlug}</span>?
                   </p>
                 )}
                 {publishError && (

@@ -1,3 +1,5 @@
+import { resolveJobName } from "./job-name";
+
 interface JenkinsConfig {
   baseUrl: string;
   username: string;
@@ -37,7 +39,7 @@ export async function triggerProductionRelease(repoName: string, tag: string): P
   const authHeader = `Basic ${Buffer.from(`${config.username}:${config.apiToken}`).toString("base64")}`;
   const crumbHeader = await fetchCrumbHeader(config, authHeader);
 
-  const jobName = `${repoName}-release`;
+  const jobName = resolveJobName(repoName, tag);
   const url = new URL(`${config.baseUrl}/job/${jobName}/buildWithParameters`);
   url.searchParams.set("TAG", tag);
   url.searchParams.set("token", config.jobToken);

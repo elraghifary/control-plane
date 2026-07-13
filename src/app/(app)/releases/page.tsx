@@ -59,8 +59,18 @@ export default async function ReleasesPage({
         <div className="flex gap-2">
           {selectedSlug && (
             <>
-              <PublishReleaseDialog slug={selectedSlug} latestTag={latestTag} defaultBranch={defaultBranch} />
-              <ReleaseProductionDialog repoName={repoName} tags={releases.map((r) => r.tagName)} />
+              <PublishReleaseDialog
+                repositories={repositories}
+                slug={selectedSlug}
+                latestTag={latestTag}
+                defaultBranch={defaultBranch}
+              />
+              <ReleaseProductionDialog
+                repositories={repositories}
+                slug={selectedSlug}
+                repoName={repoName}
+                tags={releases.map((r) => r.tagName)}
+              />
             </>
           )}
         </div>
